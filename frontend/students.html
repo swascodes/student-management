@@ -95,7 +95,7 @@ async function loadStudents(search = "", courseId = "") {
     const ids  = (eRes.students || []).map(s => s.id);
     res = await StudentsAPI.getAll(search);
     if (res.success) {
-      res.students = res.students.filter(s => ids.includes(s.id));
+      res.data = (res.data || []).filter(s => ids.includes(s.id));
     }
   } else {
     res = await StudentsAPI.getAll(search);
@@ -103,7 +103,7 @@ async function loadStudents(search = "", courseId = "") {
 
   if (!res.success) { showToast(res.error, "error"); return; }
 
-  allStudents = res.students;
+  allStudents = res.data || [];
   renderTable(allStudents);
 }
 
