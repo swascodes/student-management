@@ -1,0 +1,43 @@
+# render.yaml
+# ─────────────────────────────────────────────────────────────────
+# Render Blueprint — deploys Student Manager as a Web Service.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Usage:
+#   1. Push this file to GitHub (root of repo)
+#   2. Go to render.com → New → Blueprint
+#   3. Connect your repo — Render auto-reads this file
+# ─────────────────────────────────────────────────────────────────
+
+services:
+  - type: web
+    name: student-manager
+    runtime: python
+    plan: free                     # free tier (512 MB RAM, shared CPU)
+
+    # Run all commands from the backend package directory
+    rootDir: backend
+
+    buildCommand: pip install -r ../requirements.txt
+
+    # Gunicorn: 2 workers, binds to Render's injected $PORT
+    startCommand: gunicorn -w 2 -b 0.0.0.0:$PORT "app:create_app()"
+
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.12.0
+
+    # ── SQLite persistence note ─────────────────────────────────
+    # Render's free tier has an EPHEMERAL filesystem.
+    # Data WILL be lost on every deploy/restart.
+    # For persistent data, either:
+    #   (a) Upgrade to Render Disk ($0.25/GB/month) — add a `disk` block below
+    #   (b) Migrate DB to Render Postgres (free 90-day trial)
+    #
+    # Uncomment to add persistent disk:
+    # disk:
+    #   name: student-manager-db
+    #   mountPath: /opt/render/project/src/backend/database
+    #   sizeGB: 1

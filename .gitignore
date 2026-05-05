@@ -1,0 +1,149 @@
+# ══════════════════════════════════════════════════════
+#  Student Manager – .gitignore
+#  Carefully excludes: build artifacts, secrets, OS
+#  junk, IDE files, and the SQLite DB file.
+#  Frontend is NOT excluded — it can be committed later.
+# ══════════════════════════════════════════════════════
+
+# ── Python ────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyw
+.Python
+
+# Egg / dist (if ever packaged)
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+lib/
+lib64/
+sdist/
+wheels/
+*.whl
+
+# ── Virtual environments ──────────────────────────────
+venv/
+env/
+.venv/
+.env/
+ENV/
+VENV/
+
+# ── Environment / secrets ─────────────────────────────
+.env
+.env.*
+!.env.example          # allow a safe example file
+*.secret
+secrets.json
+
+# ── Database ──────────────────────────────────────────
+# SQLite DB is generated at runtime — never commit data
+*.db
+*.sqlite
+*.sqlite3
+backend/database/student_manager.db
+
+# ── Logs ──────────────────────────────────────────────
+*.log
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ── Testing / coverage ────────────────────────────────
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+*.hypothesis/
+
+# ── Type checkers / linters ───────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.ruff_cache/
+
+# ── OS-specific ───────────────────────────────────────
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+
+# ── IDEs / Editors ────────────────────────────────────
+# VS Code
+.vscode/
+!.vscode/extensions.json   # allow recommended extensions list
+
+# JetBrains (PyCharm, WebStorm, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim / Neovim
+*.swp
+*.swo
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+Session.vim
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# Sublime Text
+*.tmlanguage.cache
+*.tmPreferences.cache
+*.stTheme.cache
+*.sublime-workspace
+
+# ── Node (if any tooling is added later) ─────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+package-lock.json
+
+# ── Frontend – NOT excluded ───────────────────────────
+# frontend/ is intentionally tracked.
+# Commit it when ready with: git add frontend/
+
+# ── Render / deployment ───────────────────────────────
+# render.yaml IS committed (infrastructure-as-code)
+# Procfile   IS committed
+# requirements.txt IS committed
