@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Feedback — EduManage</title>
+  <meta name="description" content="View and manage student feedback." />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ── Sidebar ──────────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+      <div class="logo-text">EduManage<span>Student Management</span></div>
+    </div>
+    <nav class="sidebar-nav" aria-label="Main navigation">
+      <div class="nav-section-label">Main</div>
+      <a href="dashboard.html"  class="nav-link"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+      <a href="add.html"    class="nav-link"><i class="fa-solid fa-user-plus"></i> Add Student</a>
+      <a href="manage.html" class="nav-link"><i class="fa-solid fa-users"></i> Manage Students</a>
+      <a href="search.html" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Search Student</a>
+      <a href="feedback.html" class="nav-link active"><i class="fa-solid fa-comment-dots"></i> Student Feedback</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nav-link" style="cursor:default;pointer-events:none;opacity:.7;">
+        <i class="fa-solid fa-code-branch"></i> v2.0.0
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ── Topbar ───────────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="btn topbar-btn" id="menu-toggle" aria-label="Toggle navigation"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="topbar-title">Student Feedback</div>
+        <div class="topbar-subtitle">Monitor and respond to student issues</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn topbar-btn dark-toggle" id="dark-toggle" aria-label="Toggle dark mode"><i class="fa-solid fa-moon"></i></button>
+      <div class="avatar">A</div>
+    </div>
+  </header>
+
+  <!-- ── Main Content ─────────────────────────────────────────── -->
+  <main class="main-content">
+    <div class="page-header fade-up" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+      <div>
+        <h1 class="page-title">Feedback Dashboard</h1>
+        <p class="page-subtitle">Review, manage, and submit student feedback and feature requests.</p>
+      </div>
+      <div>
+        <button class="btn btn-primary" onclick="openFeedbackModal()">
+          <i class="fa-solid fa-plus"></i> Submit Feedback
+        </button>
+      </div>
+    </div>
+
+    <!-- Feedbacks Grid -->
+    <div class="feedback-grid fade-up" id="feedback-container">
+      <!-- Loaded dynamically via JS -->
+    </div>
+    
+    <div id="no-feedbacks" style="display:none; text-align:center; padding: 60px; color: var(--text-muted);">
+      <i class="fa-solid fa-leaf" style="font-size: 40px; margin-bottom: 16px; opacity: 0.5;"></i>
+      <div style="font-size: 16px; font-weight: 600;">No feedback found</div>
+      <p style="font-size: 13px;">There are currently no active feedback messages.</p>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Submit Feedback Modal ────────────────────────────────────── -->
+<div class="modal-overlay" id="feedback-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="fa-solid fa-comment-medical text-primary"></i> New Feedback</h3>
+      <button class="modal-close" onclick="closeFeedbackModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="feedback-form" novalidate>
+        <div class="form-group mb-4">
+          <label class="form-label" for="fb-name">Student Name <span class="required">*</span></label>
+          <div class="input-wrapper">
+             <i class="input-icon fa-solid fa-user"></i>
+             <input type="text" class="form-control" id="fb-name" placeholder="John Doe" required style="padding-left: 36px;" />
+          </div>
+        </div>
+        <div class="form-group mb-4">
+          <label class="form-label" for="fb-category">Category <span class="required">*</span></label>
+          <div class="input-wrapper">
+             <i class="input-icon fa-solid fa-tag"></i>
+             <select class="form-control" id="fb-category" required style="padding-left: 36px;">
+               <option value="" disabled selected>Select Category...</option>
+               <option value="Academic">Academic</option>
+               <option value="Facilities">Facilities</option>
+               <option value="Library">Library</option>
+               <option value="General">General Enquiry</option>
+             </select>
+          </div>
+        </div>
+        <div class="form-group mb-4">
+          <label class="form-label" for="fb-subject">Subject <span class="required">*</span></label>
+          <div class="input-wrapper">
+             <i class="input-icon fa-solid fa-heading"></i>
+             <input type="text" class="form-control" id="fb-subject" placeholder="What is this regarding?" required style="padding-left: 36px;" />
+          </div>
+        </div>
+        <div class="form-group full">
+          <label class="form-label" for="fb-message">Message <span class="required">*</span></label>
+          <textarea class="form-control" id="fb-message" rows="4" placeholder="Detail your feedback or request..." style="resize:vertical;" required></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <div id="fb-err" style="color:var(--danger); font-size:13px; font-weight:500; display:none; flex:1;">Please fill all required fields.</div>
+      <button class="btn btn-outline" onclick="closeFeedbackModal()">Cancel</button>
+      <button class="btn btn-primary" id="fb-submit-btn" onclick="submitFeedback()">Submit</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" aria-live="polite"></div>
+
+<script src="config.js"></script>
+<script src="api.js"></script>
+<script src="script.js"></script>
+<script>
+let _feedbacks = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+  seedDemoDataIfEmpty();
+  loadFeedbacks();
+});
+
+async function loadFeedbacks() {
+  try {
+    _feedbacks = await ApiService.listFeedbacks();
+    renderFeedbacks();
+  } catch(err) {
+    showToast('error', 'Error Loading Data', err.message);
+  }
+}
+
+function renderFeedbacks() {
+  const container = document.getElementById('feedback-container');
+  const empty = document.getElementById('no-feedbacks');
+  
+  if (_feedbacks.length === 0) {
+    container.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  
+  empty.style.display = 'none';
+  container.innerHTML = _feedbacks.map(fb => `
+    <div class="card feedback-card status-${escapeHtml(fb.status)}" id="fb-${escapeHtml(fb.id)}">
+      <div class="card-body" style="padding: 20px;">
+         <div class="fb-meta">
+            <span class="badge ${fb.status === 'Resolved' ? 'badge-success' : 'badge-warning'}">${escapeHtml(fb.status)}</span>
+            <span style="font-size:12px; color:var(--text-muted);"><i class="fa-regular fa-clock"></i> ${timeSince(fb.timestamp)}</span>
+         </div>
+         <h4 style="margin: 0 0 8px 0; font-size:16px; font-weight:800; color:var(--text-primary);"><i class="fa-solid fa-quote-left" style="opacity:0.2; margin-right:6px;"></i>${escapeHtml(fb.subject)}</h4>
+         <p style="margin: 0 0 16px 0; font-size: 14px; line-height:1.5; color:var(--text-secondary);">${escapeHtml(fb.message)}</p>
+         
+         <div style="display:flex; justify-content:space-between; align-items:flex-end; border-top: 1px solid var(--border); padding-top:16px; margin-top:auto;">
+            <div>
+               <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:2px;">Submitted By</div>
+               <div style="font-size:13px; font-weight:600; color:var(--text-primary);"><i class="fa-solid fa-user-circle"></i> ${escapeHtml(fb.studentName)}</div>
+               <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Cat: ${escapeHtml(fb.category)}</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+               ${fb.status === 'Pending' ? `<button class="btn btn-outline btn-sm" onclick="toggleStatus('${escapeHtml(fb.id)}', 'Resolved')" title="Mark as Resolved"><i class="fa-solid fa-check"></i></button>` : ''}
+               ${fb.status === 'Resolved' ? `<button class="btn btn-outline btn-sm" onclick="toggleStatus('${escapeHtml(fb.id)}', 'Pending')" title="Reopen as Pending"><i class="fa-solid fa-rotate-left"></i></button>` : ''}
+               <button class="btn btn-danger btn-sm" onclick="deleteFeedback('${escapeHtml(fb.id)}')"><i class="fa-solid fa-trash"></i></button>
+            </div>
+         </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openFeedbackModal() {
+  document.getElementById('feedback-form').reset();
+  document.getElementById('fb-err').style.display = 'none';
+  document.getElementById('feedback-modal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeFeedbackModal() {
+  document.getElementById('feedback-modal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+async function submitFeedback() {
+  const name = document.getElementById('fb-name').value.trim();
+  const cat = document.getElementById('fb-category').value;
+  const subj = document.getElementById('fb-subject').value.trim();
+  const msg = document.getElementById('fb-message').value.trim();
+  const err = document.getElementById('fb-err');
+  
+  if (!name || !cat || !subj || !msg) {
+    err.style.display = 'block';
+    return;
+  }
+  err.style.display = 'none';
+  
+  const btn = document.getElementById('fb-submit-btn');
+  setButtonLoading(btn, true);
+  
+  try {
+    const res = await window.ApiService.createFeedback({
+      studentName: name, category: cat, subject: subj, message: msg
+    });
+    _feedbacks.unshift(res.data);
+    renderFeedbacks();
+    showToast('success', 'Submitted', 'Feedback has been recorded successfully.');
+    closeFeedbackModal();
+  } catch (error) {
+    showToast('error', 'Failed', error.message);
+  } finally {
+    setButtonLoading(btn, false, 'Submit');
+  }
+}
+
+async function toggleStatus(id, newStatus) {
+  try {
+    await window.ApiService.updateFeedbackStatus(id, newStatus);
+    const fb = _feedbacks.find(f => f.id === id);
+    if(fb) fb.status = newStatus;
+    renderFeedbacks();
+    showToast('success', 'Status Updated', `Feedback marked as ${newStatus}.`);
+  } catch(error) {
+    showToast('error', 'Failed', error.message);
+  }
+}
+
+async function deleteFeedback(id) {
+  if(!confirm('Are you sure you want to permanently delete this feedback?')) return;
+  try {
+    await window.ApiService.deleteFeedback(id);
+    _feedbacks = _feedbacks.filter(f => f.id !== id);
+    renderFeedbacks();
+    showToast('success', 'Deleted', 'Feedback has been deleted.');
+  } catch(error) {
+    showToast('error', 'Failed', error.message);
+  }
+}
+</script>
+</body>
+</html>

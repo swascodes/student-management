@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Students — Student Management System</title>
+  <meta name="description" content="View, sort, filter, edit, and delete student records." />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ── Sidebar ──────────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+      <div class="logo-text">EduManage<span>Student Management</span></div>
+    </div>
+    <nav class="sidebar-nav" aria-label="Main navigation">
+      <div class="nav-section-label">Main</div>
+      <a href="dashboard.html"  class="nav-link"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+      <a href="add.html"    class="nav-link"><i class="fa-solid fa-user-plus"></i> Add Student</a>
+      <a href="manage.html" class="nav-link"><i class="fa-solid fa-users"></i> Manage Students</a>
+      <a href="search.html" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Search Student</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nav-link" style="cursor:default;pointer-events:none;opacity:.7;">
+        <i class="fa-solid fa-code-branch"></i> v2.0.0
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ── Topbar ───────────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="btn topbar-btn" id="menu-toggle" aria-label="Toggle navigation"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="topbar-title">Manage Students</div>
+        <div class="topbar-subtitle">Edit, sort, and delete student records</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn topbar-btn" id="refresh-btn" title="Refresh" aria-label="Refresh">
+        <i class="fa-solid fa-rotate-right"></i>
+      </button>
+      <button class="btn topbar-btn dark-toggle" id="dark-toggle" aria-label="Toggle dark mode"><i class="fa-solid fa-moon"></i></button>
+      <a href="add.html" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Add Student</a>
+      <div class="avatar">A</div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="page-header fade-up">
+      <h1 class="page-title">Student Records</h1>
+      <p class="page-subtitle">Sort, filter, edit or delete — all changes go via the API service.</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="card fade-up mb-6">
+      <div class="card-body" style="padding:14px 24px;">
+        <div class="filters-bar">
+          <div class="search-bar flex-1" style="max-width:100%;">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="search" id="table-search" placeholder="Search by name, roll number, or email…" aria-label="Search students" />
+          </div>
+          <select class="filter-select" id="dept-filter" aria-label="Filter by department"></select>
+          <select class="filter-select" id="grade-filter" aria-label="Filter by grade">
+            <option value="">All Grades</option>
+            <option value="A+">A+</option><option value="A">A</option>
+            <option value="B+">B+</option><option value="B">B</option>
+            <option value="C">C</option><option value="D">D</option><option value="F">F</option>
+          </select>
+          <button class="btn btn-outline btn-sm" id="clear-filters-btn">
+            <i class="fa-solid fa-filter-circle-xmark"></i> Clear
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card fade-up">
+      <div class="card-header" style="justify-content:space-between; display:flex;">
+        <div class="card-title">
+          <i class="fa-solid fa-table-list"></i> All Students
+          <span class="badge badge-primary" id="count-badge">—</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div id="bulk-actions" style="display:none; gap: 8px;">
+             <button class="btn btn-success btn-sm" id="bulk-export-btn" title="Export Selected as CSV"><i class="fa-solid fa-file-csv"></i></button>
+             <button class="btn btn-danger btn-sm" id="bulk-delete-btn" title="Delete Selected"><i class="fa-solid fa-trash"></i></button>
+          </div>
+          <div style="font-size:13px;color:var(--text-secondary);" id="table-meta">Loading…</div>
+        </div>
+      </div>
+      <div style="padding:0;">
+        <div class="table-wrapper">
+          <table class="data-table" id="student-table">
+            <thead>
+              <tr>
+                <th style="width:48px;"><input type="checkbox" id="select-all" style="cursor:pointer;"/></th>
+                <th data-col="name"># Student</th>
+                <th data-col="rollNo">Roll No.</th>
+                <th data-col="department">Department</th>
+                <th data-col="email">Email</th>
+                <th data-col="marks" class="sorted sort-desc">Marks <span class="sort-icon">↓</span></th>
+                <th data-col="grade">Grade</th>
+                <th data-col="joinDate">Join Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="student-tbody">
+              <!-- skeleton -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    
+    <div id="pagination-controls" style="display:flex; justify-content:center; align-items:center; gap:12px; margin: 24px 0;">
+       <button class="btn btn-outline btn-sm" id="prev-page-btn"><i class="fa-solid fa-chevron-left"></i> Prev</button>
+       <span id="page-info" style="font-size:14px; font-weight:600;">Page 1</span>
+       <button class="btn btn-outline btn-sm" id="next-page-btn">Next <i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Edit Modal ────────────────────────────────────────────── -->
+<div class="modal-overlay" id="edit-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="edit-modal-title"><i class="fa-solid fa-pen-to-square"></i> Edit Student</div>
+      <button class="modal-close" id="edit-modal-close" aria-label="Close modal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="edit-form" novalidate>
+        <input type="hidden" id="edit-id" />
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="edit-name">Full Name <span class="required">*</span></label>
+            <div class="input-wrapper"><i class="input-icon fa-solid fa-user"></i>
+              <input type="text" class="form-control" id="edit-name" placeholder="Full Name" /></div>
+            <div class="form-error" id="edit-err-name">Name required (min 3 chars)</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-rollNo">Roll Number <span class="required">*</span></label>
+            <div class="input-wrapper"><i class="input-icon fa-solid fa-id-card"></i>
+              <input type="text" class="form-control" id="edit-rollNo" placeholder="Roll No." /></div>
+            <div class="form-error" id="edit-err-rollNo">Roll number required</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-email">Email <span class="required">*</span></label>
+            <div class="input-wrapper"><i class="input-icon fa-solid fa-envelope"></i>
+              <input type="email" class="form-control" id="edit-email" placeholder="Email" /></div>
+            <div class="form-error" id="edit-err-email">Valid email required</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-phone">Phone</label>
+            <div class="input-wrapper"><i class="input-icon fa-solid fa-phone"></i>
+              <input type="tel" class="form-control" id="edit-phone" placeholder="Phone" /></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-department">Department <span class="required">*</span></label>
+            <div class="input-wrapper"><i class="input-icon fa-solid fa-building-columns"></i>
+              <select class="form-control" id="edit-department" style="padding-left:38px;"></select></div>
+            <div class="form-error" id="edit-err-department">Select a department</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-bloodGroup">Blood Group</label>
+            <div class="input-wrapper"><i class="input-icon fa-solid fa-droplet"></i>
+              <select class="form-control" id="edit-bloodGroup" style="padding-left:38px;">
+                <option value="">Select...</option>
+                <option value="A+">A+</option><option value="A-">A-</option>
+                <option value="B+">B+</option><option value="B-">B-</option>
+                <option value="O+">O+</option><option value="O-">O-</option>
+                <option value="AB+">AB+</option><option value="AB-">AB-</option>
+              </select></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-guardianName">Guardian Name</label>
+            <div class="input-wrapper"><i class="input-icon fa-solid fa-user-tie"></i>
+              <input type="text" class="form-control" id="edit-guardianName" placeholder="Guardian Name" /></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-guardianContact">Guardian</label>
+            <div class="input-wrapper"><i class="input-icon fa-solid fa-phone"></i>
+              <input type="tel" class="form-control" id="edit-guardianContact" placeholder="Contact Number" /></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-joinDate">Join Date <span class="required">*</span></label>
+            <div class="input-wrapper"><i class="input-icon fa-solid fa-calendar"></i>
+              <input type="date" class="form-control" id="edit-joinDate" style="padding-left:38px;" /></div>
+            <div class="form-error" id="edit-err-joinDate">Date required</div>
+          </div>
+          <div class="form-group full">
+            <label class="form-label" for="edit-marks">Marks (0–100) <span class="required">*</span></label>
+            <div style="position:relative;">
+              <i class="input-icon fa-solid fa-star" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:15px;pointer-events:none;"></i>
+              <input type="number" class="form-control" id="edit-marks" min="0" max="100" placeholder="0–100" style="padding-left:38px;" /></div>
+            <div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+              <div class="progress-bar-outer" style="flex:1;height:6px;">
+                <div class="progress-bar-fill" id="edit-marks-progress" style="width:0%;"></div>
+              </div>
+              <span id="edit-grade-preview" style="font-size:13px;font-weight:700;min-width:32px;text-align:right;"></span>
+            </div>
+            <div class="form-error" id="edit-err-marks">Marks must be 0–100</div>
+          </div>
+          <div class="form-group full">
+            <label class="form-label" for="edit-address">Address</label>
+            <textarea class="form-control" id="edit-address" rows="2" placeholder="Address…" style="resize:vertical;"></textarea>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" id="edit-cancel-btn">Cancel</button>
+      <button class="btn btn-primary" id="edit-save-btn">
+        <i class="fa-solid fa-floppy-disk"></i> Save Changes
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" aria-live="polite"></div>
+
+<script src="config.js"></script>
+<script src="api.js"></script>
+<script src="script.js"></script>
+<script>
+/* ── State ─────────────────────────────────────────────────── */
+let _sortCol = 'marks', _sortDir = 'desc';
+let _search  = '', _dept = '', _grade = '';
+let _page = 1, _pageSize = 10;
+let _currentStudents = [];
+let _deleteTimeout = null;
+let _pendingDeleteId = null;
+
+/* ── Init ──────────────────────────────────────────────────── */
+function pageInit() {
+  seedDemoDataIfEmpty();
+  populateDeptFilter(document.getElementById('dept-filter'), true);
+  populateDeptSelect(document.getElementById('edit-department'));
+
+  document.getElementById('student-tbody').innerHTML = `
+    <tr><td colspan="8">
+      <div style="padding:28px 0;text-align:center;color:var(--text-muted);">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size:22px;color:var(--primary);margin-bottom:10px;display:block;"></i>
+        Loading students…
+      </div>
+    </td></tr>`;
+
+  loadTable();
+
+  document.getElementById('table-search').addEventListener('input', debounce(e => { _search = e.target.value; loadTable(); }, 300));
+  document.getElementById('dept-filter').addEventListener('change', e => { _dept = e.target.value; loadTable(); });
+  document.getElementById('grade-filter').addEventListener('change', e => { _grade = e.target.value; loadTable(); });
+  document.getElementById('clear-filters-btn').addEventListener('click', clearFilters);
+  document.getElementById('refresh-btn').addEventListener('click', () => { loadTable(); showToast('info','Refreshed','Table data reloaded.'); });
+
+  document.querySelectorAll('.data-table thead th[data-col]').forEach(th =>
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      _sortDir = _sortCol === col ? (_sortDir === 'asc' ? 'desc' : 'asc') : 'asc';
+      _sortCol = col;
+      loadTable();
+    })
+  );
+
+  document.getElementById('edit-marks').addEventListener('input', () => {
+    const val = Math.max(0, Math.min(100, Number(document.getElementById('edit-marks').value) || 0));
+    document.getElementById('edit-marks-progress').style.width = val + '%';
+    const g = computeGrade(val);
+    const el = document.getElementById('edit-grade-preview');
+    el.textContent = g; el.className = gradeClass(g);
+  });
+
+  const closeModal = () => {
+    document.getElementById('edit-modal-overlay').classList.remove('show');
+    document.body.style.overflow = '';
+  };
+  document.getElementById('edit-modal-close').addEventListener('click', closeModal);
+  document.getElementById('edit-cancel-btn').addEventListener('click', closeModal);
+  document.getElementById('edit-modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('edit-modal-overlay')) closeModal();
+  });
+  document.getElementById('edit-save-btn').addEventListener('click', saveEdit);
+}
+
+// Run after script.js's DOMContentLoaded has already fired (scripts load sync, so
+// by the time this inline <script> tag runs the DOM is ready and all functions exist)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', pageInit);
+} else {
+  pageInit();
+}
+
+function debounce(fn, ms) {
+  let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+function clearFilters() {
+  document.getElementById('table-search').value = '';
+  document.getElementById('dept-filter').value  = '';
+  document.getElementById('grade-filter').value = '';
+  _search = _dept = _grade = '';
+  loadTable();
+}
+
+/* ── Load Table ─────────────────────────────────────────────── */
+async function loadTable() {
+  const refreshBtn = document.getElementById('refresh-btn');
+  refreshBtn.querySelector('i').classList.add('fa-spin');
+
+  try {
+    const res = await ApiService.listStudents({
+      search: _search, department: _dept, grade: _grade,
+      sortBy: _sortCol, sortDir: _sortDir,
+      page: _page, pageSize: _pageSize,
+    });
+    const students = res.data ?? res;
+    const total    = res.total ?? students.length;
+    _currentStudents = students;
+
+    updateSortIndicators();
+    renderCountBadge(students.length, total);
+    updatePaginationUI(total);
+    document.getElementById('select-all').checked = false;
+    updateBulkUI();
+    renderRows(students);
+
+  } catch (err) {
+    console.error('[Manage] loadTable error:', err);
+    document.getElementById('student-tbody').innerHTML = `
+      <tr><td colspan="8">
+        <div class="empty-state">
+          <i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);"></i>
+          <h3>Failed to load data</h3>
+          <p>${escapeHtml(err.message)}</p>
+        </div>
+      </td></tr>`;
+    showToast('error', 'Load Error', err.message);
+  } finally {
+    refreshBtn.querySelector('i').classList.remove('fa-spin');
+  }
+}
+
+function updateSortIndicators() {
+  document.querySelectorAll('.data-table thead th[data-col]').forEach(th => {
+    th.classList.remove('sorted','sort-asc','sort-desc');
+    const si = th.querySelector('.sort-icon');
+    if (th.dataset.col === _sortCol) {
+      th.classList.add('sorted', _sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+      if (si) si.textContent = _sortDir === 'asc' ? ' ↑' : ' ↓';
+    } else { if (si) si.textContent = ''; }
+  });
+}
+
+function renderCountBadge(shown, total) {
+  document.getElementById('count-badge').textContent = shown;
+  document.getElementById('table-meta').textContent  =
+    shown === total ? `Showing all ${total} records` : `Showing ${shown} of ${total} records`;
+}
+
+function renderRows(students) {
+  const tbody = document.getElementById('student-tbody');
+  if (!students.length) {
+    tbody.innerHTML = `<tr><td colspan="8">
+      <div class="empty-state">
+        <i class="fa-solid fa-user-slash"></i>
+        <h3>No students found</h3>
+        <p>${_search || _dept || _grade ? 'Try adjusting your filters' : '<a href="add.html" style="color:var(--primary);">Add the first student</a>'}</p>
+      </div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = students.map(s => `
+    <tr id="row-${escapeHtml(s.id)}">
+      <td><input type="checkbox" class="row-checkbox" value="${escapeHtml(s.id)}" onchange="updateBulkUI()"></td>
+      <td>
+        <div class="student-name">
+          ${s.photo ? `<div class="student-avatar" style="background:url(${escapeHtml(s.photo)}) center/cover;"></div>` : `<div class="student-avatar">${escapeHtml(initials(s.name))}</div>`}
+          <div>
+            <div style="font-weight:600;">${escapeHtml(s.name)}</div>
+            <div style="font-size:11px;color:var(--text-muted);">ID: ${escapeHtml(s.id)}</div>
+          </div>
+        </div>
+      </td>
+      <td><code style="font-size:12px;background:var(--bg);padding:2px 6px;border-radius:4px;">${escapeHtml(s.rollNo)}</code></td>
+      <td><span class="badge ${deptBadgeClass(s.department)}">${escapeHtml(s.department)}</span></td>
+      <td style="font-size:13px;color:var(--text-secondary);">${escapeHtml(s.email)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="progress-bar-outer" style="width:52px;">
+            <div class="progress-bar-fill" style="width:${s.marks}%;"></div>
+          </div>
+          <span style="font-weight:700;font-size:13px;">${s.marks}</span>
+        </div>
+      </td>
+      <td><span class="${gradeClass(s.grade)}" style="font-size:15px;">${escapeHtml(s.grade)}</span></td>
+      <td style="font-size:13px;color:var(--text-secondary);">${s.joinDate || '—'}</td>
+      <td>
+        <div class="row-actions">
+          <button class="btn btn-outline btn-icon btn-sm" onclick="window.open('id-card.html?id=${escapeHtml(s.id)}', '_blank')" title="View ID Card & Profile" aria-label="Profile">
+            <i class="fa-regular fa-id-badge"></i>
+          </button>
+          <button class="btn btn-warning btn-icon btn-sm" onclick="openEdit('${escapeHtml(s.id)}')" title="Edit" aria-label="Edit ${escapeHtml(s.name)}">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button class="btn btn-danger btn-icon btn-sm" onclick="confirmDelete('${escapeHtml(s.id)}','${escapeHtml(s.name)}')" title="Delete" aria-label="Delete ${escapeHtml(s.name)}">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+/* ── Bulk Actions & Pagination ──────────────────────────────── */
+document.getElementById('select-all').addEventListener('change', e => {
+  document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = e.target.checked);
+  updateBulkUI();
+});
+window.updateBulkUI = function() {
+  const checked = document.querySelectorAll('.row-checkbox:checked');
+  document.getElementById('bulk-actions').style.display = checked.length > 0 ? 'flex' : 'none';
+  document.getElementById('select-all').checked = checked.length === document.querySelectorAll('.row-checkbox').length && checked.length > 0;
+};
+document.getElementById('prev-page-btn').addEventListener('click', () => { if (_page > 1) { _page--; loadTable(); }});
+document.getElementById('next-page-btn').addEventListener('click', () => { _page++; loadTable(); });
+function updatePaginationUI(total) {
+  const totalPages = Math.ceil(total / _pageSize) || 1;
+  document.getElementById('page-info').textContent = `Page ${_page} of ${totalPages}`;
+  document.getElementById('prev-page-btn').disabled = _page <= 1;
+  document.getElementById('next-page-btn').disabled = _page >= totalPages;
+}
+document.getElementById('bulk-export-btn').addEventListener('click', () => {
+  const selectedIds = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
+  const selected = _currentStudents.filter(s => selectedIds.includes(s.id));
+  if (!selected.length) return;
+  const csvFormat = ["Name,Roll No,Department,Email,Marks,Grade,Blood Group,Guardian,Parent Contact"].join(",") + '\\n' +
+    selected.map(s => `"${s.name}","${s.rollNo}","${s.department}","${s.email}",${s.marks},"${s.grade}","${s.bloodGroup || ''}","${s.guardianName || ''}","${s.guardianContact || ''}"`).join('\\n');
+  const blob = new Blob([csvFormat], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.setAttribute('href', window.URL.createObjectURL(blob));
+  a.setAttribute('download', 'students_export.csv');
+  a.click();
+  showToast('success', 'Exported', 'Selected students exported to CSV.');
+});
+document.getElementById('bulk-delete-btn').addEventListener('click', async () => {
+  const selectedIds = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
+  if (!selectedIds.length) return;
+  if (confirm(`Are you sure you want to delete ${selectedIds.length} records?`)) {
+    for (const id of selectedIds) await ApiService.deleteStudent(id);
+    await loadTable();
+    showToast('success', 'Bulk Action', `${selectedIds.length} records deleted.`);
+  }
+});
+
+/* ── Keyboard Shortcuts ─────────────────────────────────────── */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key.toLowerCase() === 'n') { e.preventDefault(); window.location.href = 'add.html'; }
+  if (e.key.toLowerCase() === 'f') { e.preventDefault(); const sr = document.getElementById('table-search'); if (sr) sr.focus(); }
+});
+
+/* ── Delete with Undo ───────────────────────────────────────── */
+function confirmDelete(id, name) {
+  if (_pendingDeleteId) return showToast('error', 'Wait', 'Please wait for current operation to finish');
+
+  document.getElementById(`row-${id}`).style.opacity = '0.4';
+  showToast('info', 'Deleting', `"${name}" will be deleted. <button class="btn btn-outline btn-sm" id="undo-btn-${id}" style="margin-top:8px; padding:4px 8px; width:100%; color:var(--text-primary); border-color:var(--text-primary);">Undo Delete</button>`, 5000);
+  
+  _pendingDeleteId = id;
+  let cancelled = false;
+  
+  setTimeout(() => { 
+    const undoBtn = document.getElementById(`undo-btn-${id}`);
+    if (undoBtn) {
+      undoBtn.addEventListener('click', () => {
+        cancelled = true;
+        clearTimeout(_deleteTimeout);
+        document.getElementById(`row-${id}`).style.opacity = '1';
+        showToast('success', 'Restored', `Deletion of "${name}" cancelled.`);
+        _pendingDeleteId = null;
+      });
+    }
+  }, 100);
+
+  _deleteTimeout = setTimeout(async () => {
+    if (!cancelled) {
+      try {
+         await ApiService.deleteStudent(id);
+         await loadTable();
+         showToast('success', 'Deleted', `"${name}" permanently removed.`);
+      } catch (e) {
+         showToast('error', 'Error', e.message);
+         await loadTable();
+      }
+    }
+    _pendingDeleteId = null;
+  }, 4800);
+}
+
+/* ── Edit Modal ─────────────────────────────────────────────── */
+async function openEdit(id) {
+  const overlay = document.getElementById('edit-modal-overlay');
+  overlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
+
+  // Show loading inside modal
+  document.getElementById('edit-name').value = '';
+  document.getElementById('edit-save-btn').disabled = true;
+
+  try {
+    const res = await ApiService.getStudent(id);
+    const s   = res.data ?? res;
+
+    document.getElementById('edit-id').value       = s.id;
+    document.getElementById('edit-name').value     = s.name;
+    document.getElementById('edit-rollNo').value   = s.rollNo;
+    document.getElementById('edit-email').value    = s.email;
+    document.getElementById('edit-phone').value    = s.phone || '';
+    document.getElementById('edit-bloodGroup').value    = s.bloodGroup || '';
+    document.getElementById('edit-guardianName').value  = s.guardianName || '';
+    document.getElementById('edit-guardianContact').value = s.guardianContact || '';
+    document.getElementById('edit-address').value  = s.address || '';
+    document.getElementById('edit-joinDate').value = s.joinDate;
+    document.getElementById('edit-marks').value    = s.marks;
+    document.getElementById('edit-marks-progress').style.width = s.marks + '%';
+    const gEl = document.getElementById('edit-grade-preview');
+    gEl.textContent = s.grade; gEl.className = gradeClass(s.grade);
+
+    populateDeptSelect(document.getElementById('edit-department'), s.department);
+
+    // Clear old errors
+    document.querySelectorAll('#edit-form .form-control').forEach(el => el.classList.remove('error','success'));
+    document.querySelectorAll('#edit-form .form-error').forEach(el => el.classList.remove('show'));
+
+    document.getElementById('edit-save-btn').disabled = false;
+    setTimeout(() => document.getElementById('edit-name').focus(), 150);
+
+  } catch (err) {
+    overlay.classList.remove('show');
+    document.body.style.overflow = '';
+    showToast('error', 'Load Failed', err.message);
+  }
+}
+
+async function saveEdit() {
+  const id   = document.getElementById('edit-id').value;
+  const name = document.getElementById('edit-name').value.trim();
+  const roll = document.getElementById('edit-rollNo').value.trim();
+  const email= document.getElementById('edit-email').value.trim();
+  const dept = document.getElementById('edit-department').value;
+  const date = document.getElementById('edit-joinDate').value;
+  const marks= document.getElementById('edit-marks').value;
+
+  // Inline validation
+  let ok = true;
+  const chk = (field, pass, errMsg) => {
+    const el  = document.getElementById('edit-' + field);
+    const er  = document.getElementById('edit-err-' + field);
+    if (el) el.classList.toggle('error', !pass);
+    if (er) { if (!pass) er.textContent = errMsg; er.classList.toggle('show', !pass); }
+    if (!pass) ok = false;
+  };
+  chk('name',       name.length >= 3,  'Name required (min 3 chars)');
+  chk('rollNo',     roll.length >= 2,  'Roll number required');
+  chk('email',      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email), 'Valid email required');
+  chk('department', !!dept,             'Select a department');
+  chk('joinDate',   !!date,             'Date required');
+  chk('marks',      marks !== '' && Number(marks) >= 0 && Number(marks) <= 100, 'Marks must be 0–100');
+
+  if (!ok) { showToast('error', 'Validation Error', 'Please correct highlighted fields.'); return; }
+
+  const payload = {
+    name, rollNo: roll, email,
+    phone:      document.getElementById('edit-phone').value,
+    bloodGroup: document.getElementById('edit-bloodGroup').value,
+    guardianName: document.getElementById('edit-guardianName').value,
+    guardianContact: document.getElementById('edit-guardianContact').value,
+    address:    document.getElementById('edit-address').value,
+    department: dept, joinDate: date, marks: Number(marks),
+  };
+
+  const btn = document.getElementById('edit-save-btn');
+  setButtonLoading(btn, true);
+
+  try {
+    const res = await ApiService.updateStudent(id, payload);
+    const s   = res.data ?? res;
+
+    document.getElementById('edit-modal-overlay').classList.remove('show');
+    document.body.style.overflow = '';
+    await loadTable();
+    showToast('success', 'Updated!', `${s.name}'s record has been saved.`);
+
+  } catch (err) {
+    console.error('[Manage] saveEdit error:', err);
+    if (err.status === 409) {
+      const el = document.getElementById('edit-rollNo');
+      const er = document.getElementById('edit-err-rollNo');
+      if (el) el.classList.add('error');
+      if (er) { er.textContent = err.message; er.classList.add('show'); }
+    }
+    showToast('error', 'Update Failed', err.message);
+  } finally {
+    setButtonLoading(btn, false, '<i class="fa-solid fa-floppy-disk"></i> Save Changes');
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search Student — Student Management System</title>
+  <meta name="description" content="Instantly find any student by name, roll number, email, or department." />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    .big-search-wrap { max-width: 640px; margin: 0 auto 36px; }
+    .big-search { position: relative; }
+    .big-search input {
+      width: 100%; padding: 16px 20px 16px 54px; font-size: 16px;
+      border: 2px solid var(--border); border-radius: var(--radius-lg);
+      background: var(--bg-card); color: var(--text-primary);
+      box-shadow: var(--shadow-md); transition: var(--transition);
+    }
+    .big-search input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99,102,241,.15),var(--shadow-md); }
+    .big-search .srch-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--text-muted); transition: color .2s; pointer-events: none; }
+    .big-search input:focus ~ .srch-icon { color: var(--primary); }
+    .big-search .clear-btn {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+      padding: 4px 10px; font-size: 12px; font-weight: 600; color: var(--text-secondary);
+      cursor: pointer; display: none; transition: var(--transition);
+    }
+    .big-search .clear-btn.visible { display: block; }
+    .big-search .clear-btn:hover  { background: var(--danger-light); color: var(--danger); border-color: var(--danger); }
+    .search-chip {
+      display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
+      border-radius: 20px; font-size: 12px; font-weight: 600;
+      border: 1.5px solid var(--border); background: var(--bg-card);
+      color: var(--text-secondary); cursor: pointer; transition: var(--transition);
+    }
+    .search-chip:hover, .search-chip.active { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+    .result-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 20px; display: flex; align-items: flex-start; gap: 16px;
+      transition: var(--transition); cursor: default;
+      animation: searchPop .22s ease forwards; opacity: 0;
+    }
+    .result-card:hover { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,.1),var(--shadow-md); transform: translateY(-2px); }
+    .result-avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg,var(--primary),var(--secondary)); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px; font-weight: 800; flex-shrink: 0; box-shadow: 0 4px 12px rgba(99,102,241,.35); }
+    .result-info { flex: 1; min-width: 0; }
+    .result-name { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+    .result-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+    .result-meta-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-secondary); }
+    .result-meta-item i { color: var(--primary); font-size: 11px; }
+    .result-marks { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+    .result-marks .big-grade { font-size: 28px; font-weight: 900; line-height: 1; }
+    .result-marks .marks-val { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(340px,1fr)); gap: 16px; }
+    @keyframes searchPop { from { opacity:0; transform:scale(.95) translateY(8px);} to { opacity:1; transform:scale(1) translateY(0);} }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ── Sidebar ──────────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+      <div class="logo-text">EduManage<span>Student Management</span></div>
+    </div>
+    <nav class="sidebar-nav" aria-label="Main navigation">
+      <div class="nav-section-label">Main</div>
+      <a href="dashboard.html"  class="nav-link"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+      <a href="add.html"    class="nav-link"><i class="fa-solid fa-user-plus"></i> Add Student</a>
+      <a href="manage.html" class="nav-link"><i class="fa-solid fa-users"></i> Manage Students</a>
+      <a href="search.html" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Search Student</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nav-link" style="cursor:default;pointer-events:none;opacity:.7;">
+        <i class="fa-solid fa-code-branch"></i> v2.0.0
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ── Topbar ───────────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="btn topbar-btn" id="menu-toggle" aria-label="Toggle navigation"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="topbar-title">Search</div>
+        <div class="topbar-subtitle">Find any student instantly</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn topbar-btn dark-toggle" id="dark-toggle" aria-label="Toggle dark mode"><i class="fa-solid fa-moon"></i></button>
+      <a href="add.html" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Add Student</a>
+      <div class="avatar">A</div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="page-header fade-up" style="text-align:center;">
+      <h1 class="page-title">Find a Student</h1>
+      <p class="page-subtitle">Search by name, roll number, email, or department</p>
+    </div>
+
+    <!-- Big Search -->
+    <div class="big-search-wrap fade-up">
+      <div class="big-search">
+        <input type="search" id="main-search" placeholder="Type to search students…" autocomplete="off" aria-label="Search students" />
+        <i class="fa-solid fa-magnifying-glass srch-icon"></i>
+        <button class="clear-btn" id="clear-search" aria-label="Clear search">Clear</button>
+      </div>
+      <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;" id="dept-chips">
+        <button class="search-chip active" data-dept="">All</button>
+      </div>
+    </div>
+
+    <!-- Results header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;" class="fade-up">
+      <div style="font-size:14px;color:var(--text-secondary);" id="results-meta">Loading…</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline btn-sm" id="sort-marks-btn" title="Sort by marks">
+          <i class="fa-solid fa-arrow-up-wide-short"></i> Marks
+        </button>
+        <button class="btn btn-outline btn-sm" id="sort-name-btn" title="Sort by name">
+          <i class="fa-solid fa-arrow-down-a-z"></i> Name
+        </button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="results-grid" id="results-grid"></div>
+    <div id="empty-state-wrapper" style="display:none;" class="fade-up">
+      <div class="empty-state" style="padding:80px 24px;">
+        <i class="fa-solid fa-face-sad-cry"></i>
+        <h3>No students found</h3>
+        <p>Try a different term or <a href="add.html" style="color:var(--primary);">add a new student</a>.</p>
+      </div>
+    </div>
+    <div id="loading-state" class="fade-up" style="display:none;text-align:center;padding:40px;">
+      <i class="fa-solid fa-spinner fa-spin" style="font-size:28px;color:var(--primary);"></i>
+      <p style="margin-top:12px;color:var(--text-secondary);">Searching…</p>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Profile Modal ─────────────────────────────────────────── -->
+<div class="modal-overlay" id="view-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="view-modal-name">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fa-solid fa-address-card"></i> Student Profile</div>
+      <button class="modal-close" id="view-modal-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="view-modal-body" style="padding-bottom:8px;min-height:200px;">
+      <div style="text-align:center;padding:40px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:28px;color:var(--primary);"></i></div>
+    </div>
+    <div class="modal-footer">
+      <a href="manage.html" class="btn btn-outline btn-sm"><i class="fa-solid fa-users"></i> Manage</a>
+      <button class="btn btn-warning btn-sm" id="view-edit-btn"><i class="fa-solid fa-pen"></i> Edit in Manage</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" aria-live="polite"></div>
+
+<script src="config.js"></script>
+<script src="api.js"></script>
+<script src="script.js"></script>
+<script>
+let _currentQ    = '';
+let _currentDept = '';
+let _sortMode    = 'marks';
+let _sortDir     = 'desc';
+let _searchTimer = null;
+
+async function pageInit() {
+  seedDemoDataIfEmpty();
+  buildChips();
+  await doSearch();
+
+  const input    = document.getElementById('main-search');
+  const clearBtn = document.getElementById('clear-search');
+
+  input.addEventListener('input', () => {
+    _currentQ = input.value.trim().toLowerCase();
+    clearBtn.classList.toggle('visible', _currentQ.length > 0);
+    scheduleSearch();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    input.value = ''; _currentQ = '';
+    clearBtn.classList.remove('visible');
+    doSearch();
+    input.focus();
+  });
+
+  document.getElementById('sort-marks-btn').addEventListener('click', () => {
+    if (_sortMode === 'marks') _sortDir = _sortDir === 'desc' ? 'asc' : 'desc';
+    else { _sortMode = 'marks'; _sortDir = 'desc'; }
+    doSearch();
+  });
+
+  document.getElementById('sort-name-btn').addEventListener('click', () => {
+    if (_sortMode === 'name') _sortDir = _sortDir === 'asc' ? 'desc' : 'asc';
+    else { _sortMode = 'name'; _sortDir = 'asc'; }
+    doSearch();
+  });
+
+  const closeView = () => {
+    document.getElementById('view-modal-overlay').classList.remove('show');
+    document.body.style.overflow = '';
+  };
+  document.getElementById('view-modal-close').addEventListener('click', closeView);
+  document.getElementById('view-edit-btn').addEventListener('click', closeView);
+  document.getElementById('view-modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('view-modal-overlay')) closeView();
+  });
+
+  input.focus();
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', pageInit);
+} else {
+  pageInit();
+}
+
+function scheduleSearch() {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(doSearch, 280);
+}
+
+async function buildChips() {
+  // Fetch all students once to get department list
+  try {
+    const res      = await ApiService.listStudents({ pageSize: 0 });
+    const students = res.data ?? res;
+    const depts    = [...new Set(students.map(s => s.department))].sort();
+    const container= document.getElementById('dept-chips');
+    depts.forEach(d => {
+      const btn = Object.assign(document.createElement('button'), { className: 'search-chip', textContent: d });
+      btn.dataset.dept = d;
+      btn.addEventListener('click', () => {
+        _currentDept = (_currentDept === d) ? '' : d;
+        document.querySelectorAll('.search-chip').forEach(c =>
+          c.classList.toggle('active', c.dataset.dept === _currentDept)
+        );
+        if (!_currentDept) container.querySelector('[data-dept=""]').classList.add('active');
+        doSearch();
+      });
+      container.appendChild(btn);
+    });
+    container.querySelector('[data-dept=""]').addEventListener('click', () => {
+      _currentDept = '';
+      document.querySelectorAll('.search-chip').forEach(c => c.classList.remove('active'));
+      container.querySelector('[data-dept=""]').classList.add('active');
+      doSearch();
+    });
+  } catch { /* chips optional */ }
+}
+
+async function doSearch() {
+  document.getElementById('loading-state').style.display = 'block';
+  document.getElementById('empty-state-wrapper').style.display = 'none';
+  document.getElementById('results-grid').innerHTML = '';
+
+  try {
+    const res = await ApiService.listStudents({
+      search:     _currentQ,
+      department: _currentDept,
+      sortBy:     _sortMode === 'marks' ? 'marks' : 'name',
+      sortDir:    _sortDir,
+      pageSize:   0,
+    });
+    const students = res.data ?? res;
+    const total    = res.total ?? students.length;
+
+    document.getElementById('loading-state').style.display = 'none';
+    renderMeta(students.length, total);
+
+    if (!students.length) {
+      document.getElementById('empty-state-wrapper').style.display = 'block';
+      return;
+    }
+    renderCards(students);
+
+  } catch (err) {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('results-grid').innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1;padding:60px 24px;">
+        <i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);font-size:48px;"></i>
+        <h3>Search Failed</h3>
+        <p>${escapeHtml(err.message)}</p>
+      </div>`;
+    showToast('error', 'Search Error', err.message);
+  }
+}
+
+function renderMeta(shown, total) {
+  document.getElementById('results-meta').innerHTML =
+    shown === total
+      ? `Showing all <strong>${shown}</strong> students`
+      : `Found <strong>${shown}</strong> of ${total} students`;
+}
+
+function hl(text, q) {
+  if (!q) return escapeHtml(text);
+  const safe  = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${safe})`, 'gi');
+  return escapeHtml(text).replace(regex, '<mark class="highlight">$1</mark>');
+}
+
+function renderCards(students) {
+  const grid = document.getElementById('results-grid');
+  grid.innerHTML = students.map((s, i) => `
+    <div class="result-card" onclick="openView('${escapeHtml(s.id)}')"
+         style="animation-delay:${i * 0.035}s;"
+         role="button" tabindex="0"
+         onkeydown="if(event.key==='Enter')openView('${escapeHtml(s.id)}')"
+         aria-label="View ${escapeHtml(s.name)}'s profile">
+      <div class="result-avatar">${escapeHtml(initials(s.name))}</div>
+      <div class="result-info">
+        <div class="result-name">${hl(s.name, _currentQ)}</div>
+        <div style="margin-bottom:4px;">
+          <span class="badge ${deptBadgeClass(s.department)}">${hl(s.department, _currentQ)}</span>
+          <code style="font-size:11px;background:var(--bg);padding:2px 6px;border-radius:4px;margin-left:6px;">${hl(s.rollNo, _currentQ)}</code>
+        </div>
+        <div class="result-meta">
+          <div class="result-meta-item"><i class="fa-solid fa-envelope"></i>${hl(s.email, _currentQ)}</div>
+          ${s.phone ? `<div class="result-meta-item"><i class="fa-solid fa-phone"></i>${escapeHtml(s.phone)}</div>` : ''}
+          <div class="result-meta-item"><i class="fa-solid fa-calendar"></i>${s.joinDate || '—'}</div>
+        </div>
+      </div>
+      <div class="result-marks">
+        <div class="big-grade ${gradeClass(s.grade)}">${escapeHtml(s.grade)}</div>
+        <div class="marks-val">${s.marks}/100</div>
+        <div class="progress-bar-outer" style="width:56px;margin-top:4px;">
+          <div class="progress-bar-fill" style="width:${s.marks}%;"></div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+/* ── Profile Modal ──────────────────────────────────────────── */
+async function openView(id) {
+  const overlay = document.getElementById('view-modal-overlay');
+  document.getElementById('view-modal-body').innerHTML =
+    '<div style="text-align:center;padding:40px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:28px;color:var(--primary);"></i></div>';
+  overlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
+
+  try {
+    const res = await ApiService.getStudent(id);
+    const s   = res.data ?? res;
+
+    document.getElementById('view-modal-body').innerHTML = `
+      <div style="text-align:center;padding:16px 0 24px;">
+        <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;color:#fff;margin:0 auto 14px;box-shadow:0 6px 20px rgba(99,102,241,.4);">
+          ${escapeHtml(initials(s.name))}
+        </div>
+        <h2 id="view-modal-name" style="font-size:22px;font-weight:800;margin-bottom:6px;">${escapeHtml(s.name)}</h2>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:4px;">
+          <span class="badge ${deptBadgeClass(s.department)}">${escapeHtml(s.department)}</span>
+          <code style="font-size:12px;background:var(--bg);padding:2px 8px;border-radius:4px;">${escapeHtml(s.rollNo)}</code>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:0 4px 16px;">
+        ${pf('fa-envelope','Email',s.email)}
+        ${pf('fa-phone','Phone',s.phone||'—')}
+        ${pf('fa-star','Marks',s.marks+' / 100')}
+        ${pf('fa-trophy','Grade',`<span class="${gradeClass(s.grade)}" style="font-size:18px;">${s.grade}</span>`)}
+        ${pf('fa-calendar','Join Date',s.joinDate||'—')}
+        ${pf('fa-clock','Last Updated',formatDate(s.updatedAt))}
+        ${s.address ? pf('fa-location-dot','Address',escapeHtml(s.address),true) : ''}
+      </div>
+      <div style="background:var(--bg);border-radius:var(--radius);padding:14px;margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px;">Performance</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="progress-bar-outer" style="flex:1;height:10px;">
+            <div class="progress-bar-fill" style="width:${s.marks}%;"></div>
+          </div>
+          <span style="font-weight:700;font-size:14px;">${s.marks}%</span>
+        </div>
+      </div>`;
+
+  } catch (err) {
+    overlay.classList.remove('show');
+    document.body.style.overflow = '';
+    showToast('error', 'Load Failed', err.message);
+  }
+}
+
+function pf(icon, label, value, full = false) {
+  return `
+    <div style="${full ? 'grid-column:1/-1;' : ''}background:var(--bg);border-radius:var(--radius-sm);padding:12px 14px;">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);margin-bottom:4px;">
+        <i class="fa-solid ${icon}" style="margin-right:5px;color:var(--primary);"></i>${label}
+      </div>
+      <div style="font-size:14px;font-weight:600;color:var(--text-primary);">${value}</div>
+    </div>`;
+}
+</script>
+</body>
+</html>

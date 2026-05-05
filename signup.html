@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up — EduManage</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth-landing.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+  <div class="auth-container">
+    <div style="position:absolute; top: 20px; left: 20px;">
+      <a href="index.html" class="btn btn-outline btn-sm"><i class="fa-solid fa-arrow-left"></i> Home</a>
+    </div>
+    <div style="position:absolute; top: 20px; right: 20px;">
+      <button class="btn btn-icon dark-toggle" id="dark-toggle"><i class="fa-solid fa-moon"></i></button>
+    </div>
+
+    <div class="auth-card" style="max-width: 500px;">
+      <div class="auth-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+      <h2 class="auth-title">Create an Account</h2>
+      <p class="auth-subtitle">Join EduManage and transform your institution.</p>
+
+      <form id="signup-form" action="dashboard.html">
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">Full Name</label>
+          <div class="input-wrapper">
+            <i class="fa-regular fa-user input-icon"></i>
+            <input type="text" class="form-control" placeholder="John Doe" required />
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">Email Address</label>
+          <div class="input-wrapper">
+            <i class="fa-regular fa-envelope input-icon"></i>
+            <input type="email" class="form-control" placeholder="name@example.com" required />
+          </div>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 28px;">
+          <label class="form-label">Password</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input type="password" class="form-control" placeholder="Create a strong password" required minlength="8" />
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; height: 44px; font-size:16px;">
+          Sign Up <i class="fa-solid fa-user-plus" style="margin-left: 6px;"></i>
+        </button>
+      </form>
+
+      <div class="auth-links">
+        Already have an account? <a href="login.html">Log In</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
