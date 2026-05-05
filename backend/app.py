@@ -23,6 +23,7 @@ from routes.student_routes    import students_bp
 from routes.course_routes     import courses_bp
 from routes.enrollment_routes import enrollments_bp
 from routes.marks_routes      import marks_bp
+from routes.auth_routes       import auth_bp
 
 
 def create_app() -> Flask:
@@ -43,9 +44,15 @@ def create_app() -> Flask:
     app.register_blueprint(courses_bp,     url_prefix="/api/courses")
     app.register_blueprint(enrollments_bp, url_prefix="/api/enrollments")
     app.register_blueprint(marks_bp,       url_prefix="/api/marks")
+    app.register_blueprint(auth_bp,        url_prefix="/api/auth")
 
     # ── Database ──────────────────────────────────────────────────────
     init_db(app)
+
+    # Create default admin on first run (prints credentials to console)
+    from services.auth_service import ensure_default_admin
+    with app.app_context():
+        ensure_default_admin()
 
     # ── Frontend catch-all ────────────────────────────────────────────
     # Serve any HTML/CSS/JS file from the /frontend directory

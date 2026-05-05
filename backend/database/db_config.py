@@ -38,16 +38,45 @@ def close_db(e=None):
         db.close()
 
 
+def _migrate(db: sqlite3.Connection) -> None:
+    """
+    Add any new columns to existing databases (non-destructive migration).
+    SQLite doesn't support ADD COLUMN IF NOT EXISTS, so we check existing cols first.
+    """
+    # Get current student columns
+    existing = {row[1] for row in db.execute("PRAGMA table_info(students)")}
+
+    new_columns = [
+        ("roll_no",          "TEXT UNIQUE"),
+        ("department",       "TEXT"),
+        ("marks",            "REAL"),
+        ("grade",            "TEXT"),
+        ("blood_group",      "TEXT"),
+        ("guardian_name",    "TEXT"),
+        ("guardian_contact", "TEXT"),
+        ("join_date",        "DATE"),
+        ("created_at",       "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"),
+        ("updated_at",       "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"),
+    ]
+    for col_name, col_def in new_columns:
+        if col_name not in existing:
+            db.execute(f"ALTER TABLE students ADD COLUMN {col_name} {col_def}")
+
+    db.commit()
+
+
 def init_db(app):
     """
-    Register teardown and create all tables from schema.sql
-    on the first run (idempotent – CREATE TABLE IF NOT EXISTS).
+    Register teardown and create/migrate all tables from schema.sql.
+    Safe to call on every restart — CREATE TABLE IF NOT EXISTS is idempotent.
     """
     app.teardown_appcontext(close_db)
 
-    # Run schema inside an app context so get_db() works
     with app.app_context():
         db = get_db()
         with open(SCHEMA_PATH, "r") as f:
             db.executescript(f.read())
         db.commit()
+        # Migrate any existing DB to add new columns
+        _migrate(db)
+
