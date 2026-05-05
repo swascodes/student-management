@@ -47,7 +47,7 @@ def _migrate(db: sqlite3.Connection) -> None:
     existing = {row[1] for row in db.execute("PRAGMA table_info(students)")}
 
     new_columns = [
-        ("roll_no",          "TEXT UNIQUE"),
+        ("roll_no",          "TEXT"),
         ("department",       "TEXT"),
         ("marks",            "REAL"),
         ("grade",            "TEXT"),
@@ -55,8 +55,8 @@ def _migrate(db: sqlite3.Connection) -> None:
         ("guardian_name",    "TEXT"),
         ("guardian_contact", "TEXT"),
         ("join_date",        "DATE"),
-        ("created_at",       "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"),
-        ("updated_at",       "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"),
+        ("created_at",       "TIMESTAMP"),  # DEFAULT not allowed in ALTER TABLE
+        ("updated_at",       "TIMESTAMP"),
     ]
     for col_name, col_def in new_columns:
         if col_name not in existing:
