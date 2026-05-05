@@ -229,6 +229,19 @@
 <script src="api.js?v=4"></script>
 <script src="script.js?v=4"></script>
 <script>
+window.addEventListener('error', function(e) {
+  const tbody = document.getElementById('student-tbody');
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="8"><div style="color:red;text-align:center;padding:20px;"><b>Global Error:</b> ${e.message} at ${e.filename}:${e.lineno}</div></td></tr>`;
+  }
+});
+window.addEventListener('unhandledrejection', function(e) {
+  const tbody = document.getElementById('student-tbody');
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="8"><div style="color:red;text-align:center;padding:20px;"><b>Unhandled Promise Rejection:</b> ${e.reason}</div></td></tr>`;
+  }
+});
+
 /* ── State ─────────────────────────────────────────────────── */
 let _sortCol = 'marks', _sortDir = 'desc';
 let _search  = '', _dept = '', _grade = '';
@@ -291,9 +304,11 @@ function pageInit() {
 // Run after script.js's DOMContentLoaded has already fired (scripts load sync, so
 // by the time this inline <script> tag runs the DOM is ready and all functions exist)
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', pageInit);
+  document.addEventListener('DOMContentLoaded', () => {
+    try { pageInit(); } catch(e) { window.dispatchEvent(new ErrorEvent('error', { error: e, message: e.message })); }
+  });
 } else {
-  pageInit();
+  try { pageInit(); } catch(e) { window.dispatchEvent(new ErrorEvent('error', { error: e, message: e.message })); }
 }
 
 function debounce(fn, ms) {
