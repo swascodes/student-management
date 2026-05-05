@@ -57,8 +57,9 @@ async function httpRequest(method, path, body = null) {
   }
 
   if (!response.ok || json.success === false) {
+    const errorMsg = json.error || json.message || 'Server error';
     throw new ApiError(
-      json.message || `Server error ${response.status}`,
+      `${errorMsg} (Code: ${response.status})`,
       response.status,
       json
     );
