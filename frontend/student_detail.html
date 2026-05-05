@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Detailed student profile showing courses, marks, and academic performance."/>
+  <title>Student Profile | Student Manager</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .profile-header {
+      display: flex; gap: 24px; align-items: flex-start;
+      padding: 28px; border-radius: var(--radius-lg);
+      background: var(--glass-bg);
+      border: var(--border-w) solid var(--glass-border);
+      box-shadow: var(--shadow-neo);
+      margin-bottom: 28px;
+      backdrop-filter: var(--glass-blur);
+    }
+    .avatar {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--lavender);
+      border: var(--border-w) solid var(--glass-border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; flex-shrink: 0;
+      box-shadow: var(--shadow-neo-sm);
+    }
+    .profile-info h2 { font-size: 1.4rem; font-weight: 900; margin-bottom: 4px; color: var(--text-primary); }
+    .profile-meta   { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; }
+    .meta-item      { font-size: 0.82rem; color: var(--text-secondary); font-weight: 500; }
+    .meta-item span { color: var(--text-primary); font-weight: 700; }
+    .marks-row td:nth-child(3) { font-weight: 700; color: var(--lavender-dark); }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🎓</div>
+      <h2>Student Manager</h2>
+      <span>Academic Platform</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <a href="index.html"       class="nav-link"><span class="nav-icon">⊞</span> Dashboard</a>
+      <div class="nav-section-label">Manage</div>
+      <a href="students.html"    class="nav-link active"><span class="nav-icon">👨‍🎓</span> Students</a>
+      <a href="courses.html"     class="nav-link"><span class="nav-icon">📚</span> Courses</a>
+      <a href="enroll.html"      class="nav-link"><span class="nav-icon">🔗</span> Enrollments</a>
+      <div class="nav-section-label">Actions</div>
+      <a href="add_student.html" class="nav-link"><span class="nav-icon">＋</span> Add Student</a>
+      <a href="add_course.html"  class="nav-link"><span class="nav-icon">＋</span> Add Course</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header flex items-center justify-between">
+      <div>
+        <h1 id="page-title">Student Profile</h1>
+        <p><a href="students.html" style="color:var(--text-muted);text-decoration:none;">← Back to Students</a></p>
+      </div>
+      <div class="flex gap-2" id="action-buttons"></div>
+    </div>
+
+    <!-- Profile Card -->
+    <div class="profile-header" id="profile-header">
+      <div class="avatar">👤</div>
+      <div class="profile-info">
+        <div class="skeleton" style="width:200px;height:24px;margin-bottom:8px;"></div>
+        <div class="skeleton" style="width:160px;height:16px;"></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+      <!-- Enrolled Courses -->
+      <div class="card">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="section-title" style="margin:0;">📚 Enrolled Courses</h3>
+          <a href="enroll.html" class="btn btn-secondary btn-sm" id="enroll-btn">+ Enroll</a>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>Course</th><th>Credits</th><th>Instructor</th><th></th></tr>
+            </thead>
+            <tbody id="courses-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Marks & Grades -->
+      <div class="card">
+        <h3 class="section-title">📝 Academic Performance</h3>
+        <div id="marks-summary" class="flex gap-3 mb-4" style="flex-wrap:wrap;"></div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>Course</th><th>Marks</th><th>Grade</th><th></th></tr>
+            </thead>
+            <tbody id="marks-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Add Marks Inline Form -->
+        <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--glass-border);">
+          <h4 style="font-size:0.85rem;font-weight:600;margin-bottom:12px;color:var(--text-secondary);">ADD / UPDATE MARKS</h4>
+          <div class="flex gap-2" style="flex-wrap:wrap;">
+            <select id="marks-course-sel" class="form-control" style="flex:1;min-width:140px;"></select>
+            <input  id="marks-value" type="number" min="0" max="100" class="form-control" placeholder="0–100" style="width:100px;"/>
+            <button class="btn btn-success" onclick="submitMarks()">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="js/api.js"></script>
+<script>
+const params    = new URLSearchParams(window.location.search);
+const studentId = parseInt(params.get("id"));
+
+if (!studentId) { window.location.href = "students.html"; }
+
+async function loadProfile() {
+  const [stuRes, courseRes, marksRes] = await Promise.all([
+    StudentsAPI.getById(studentId),
+    EnrollmentsAPI.getForStudent(studentId),
+    MarksAPI.getForStudent(studentId),
+  ]);
+
+  if (!stuRes.success) { showToast(stuRes.error, "error"); return; }
+  const s       = stuRes.student;
+  const courses = courseRes.courses  || [];
+  const marks   = marksRes.marks     || [];
+
+  // Page title + actions
+  document.getElementById("page-title").textContent = s.name;
+  document.getElementById("action-buttons").innerHTML = `
+    <a href="add_student.html?edit=${s.id}" class="btn btn-secondary btn-sm">✏️ Edit</a>
+    <a href="enroll.html?student=${s.id}"   class="btn btn-primary   btn-sm">🔗 Enroll</a>`;
+  document.getElementById("enroll-btn").href = `enroll.html?student=${studentId}`;
+
+  // Profile header
+  document.getElementById("profile-header").innerHTML = `
+    <div class="avatar">👤</div>
+    <div class="profile-info">
+      <h2>${s.name}</h2>
+      <div class="text-sm text-muted">${s.email}</div>
+      <div class="profile-meta">
+        <div class="meta-item">📞 <span>${s.phone || "—"}</span></div>
+        <div class="meta-item">🎂 <span>${s.dob || "—"}</span></div>
+        <div class="meta-item">📍 <span>${s.address || "—"}</span></div>
+        <div class="meta-item">🆔 <span>#${s.id}</span></div>
+      </div>
+    </div>`;
+
+  // Courses table
+  const cTbody = document.getElementById("courses-tbody");
+  if (!courses.length) {
+    cTbody.innerHTML = `<tr><td colspan="4"><div class="empty-state" style="padding:20px;"><div class="empty-icon" style="font-size:2rem;">📚</div><p>Not enrolled yet.</p></div></td></tr>`;
+  } else {
+    cTbody.innerHTML = courses.map(c => `
+      <tr>
+        <td>${c.course_name}</td>
+        <td><span class="badge badge-teal">${c.credits} cr</span></td>
+        <td>${c.instructor_name}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="unenroll(${c.id},'${c.course_name}')">Remove</button></td>
+      </tr>`).join("");
+  }
+
+  // Marks table
+  const mTbody = document.getElementById("marks-tbody");
+  const summaryDiv = document.getElementById("marks-summary");
+
+  if (!marks.length) {
+    mTbody.innerHTML = `<tr><td colspan="4"><div class="empty-state" style="padding:20px;"><div class="empty-icon" style="font-size:2rem;">📝</div><p>No marks yet.</p></div></td></tr>`;
+    summaryDiv.innerHTML = "";
+  } else {
+    mTbody.innerHTML = marks.map(m => {
+      const g = marksRes.grade;
+      const singleGrade = assignGrade(m.marks);
+      return `
+        <tr>
+          <td>${m.course_name}</td>
+          <td>${m.marks}</td>
+          <td><span class="${gradeClass(singleGrade)}">${singleGrade}</span></td>
+          <td></td>
+        </tr>`;
+    }).join("");
+
+    summaryDiv.innerHTML = `
+      <div style="background:var(--lavender-pale);border:var(--border-w) solid var(--lavender-dark);border-radius:var(--radius-sm);padding:12px 18px;box-shadow:var(--shadow-neo-sm);">
+        <div class="text-sm text-muted">Total</div>
+        <div style="font-size:1.4rem;font-weight:900;color:var(--text-primary);">${marksRes.total}</div>
+      </div>
+      <div style="background:var(--mint-pale);border:var(--border-w) solid var(--mint-dark);border-radius:var(--radius-sm);padding:12px 18px;box-shadow:var(--shadow-neo-sm);">
+        <div class="text-sm text-muted">Average</div>
+        <div style="font-size:1.4rem;font-weight:900;color:var(--mint-dark);">${marksRes.average}%</div>
+      </div>
+      <div style="background:var(--amber-pale);border:var(--border-w) solid var(--amber-dark);border-radius:var(--radius-sm);padding:12px 18px;box-shadow:var(--shadow-neo-sm);">
+        <div class="text-sm text-muted">Grade</div>
+        <div style="font-size:1.4rem;font-weight:900;color:var(--amber-dark);">${marksRes.grade}</div>
+      </div>`;
+  }
+
+  // Populate marks course selector (only enrolled courses)
+  const sel = document.getElementById("marks-course-sel");
+  sel.innerHTML = '<option value="">Select Course…</option>' +
+    courses.map(c => `<option value="${c.id}">${c.course_name}</option>`).join("");
+}
+
+function assignGrade(m) {
+  if (m >= 90) return "A+";
+  if (m >= 80) return "A";
+  if (m >= 70) return "B";
+  if (m >= 60) return "C";
+  if (m >= 50) return "D";
+  return "F";
+}
+
+async function unenroll(courseId, courseName) {
+  if (!confirm(`Remove enrollment from "${courseName}"?`)) return;
+  const res = await EnrollmentsAPI.remove(studentId, courseId);
+  if (res.success) { showToast("Enrollment removed."); loadProfile(); }
+  else             { showToast(res.error, "error"); }
+}
+
+async function submitMarks() {
+  const courseId = document.getElementById("marks-course-sel").value;
+  const marks    = document.getElementById("marks-value").value;
+  if (!courseId) { showToast("Please select a course.", "error"); return; }
+  if (marks === "") { showToast("Please enter marks.", "error"); return; }
+
+  const res = await MarksAPI.save(studentId, parseInt(courseId), parseFloat(marks));
+  if (res.success) { showToast("Marks saved!"); loadProfile(); document.getElementById("marks-value").value = ""; }
+  else             { showToast(res.error, "error"); }
+}
+
+loadProfile();
+</script>
+</body>
+</html>

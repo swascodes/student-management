@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Add a new student to the Student Manager system."/>
+  <title>Add Student | Student Manager</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🎓</div>
+      <h2>Student Manager</h2>
+      <span>Academic Platform</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <a href="index.html"       class="nav-link"><span class="nav-icon">⊞</span> Dashboard</a>
+      <div class="nav-section-label">Manage</div>
+      <a href="students.html"    class="nav-link"><span class="nav-icon">👨‍🎓</span> Students</a>
+      <a href="courses.html"     class="nav-link"><span class="nav-icon">📚</span> Courses</a>
+      <a href="enroll.html"      class="nav-link"><span class="nav-icon">🔗</span> Enrollments</a>
+      <div class="nav-section-label">Actions</div>
+      <a href="add_student.html" class="nav-link active"><span class="nav-icon">＋</span> Add Student</a>
+      <a href="add_course.html"  class="nav-link"><span class="nav-icon">＋</span> Add Course</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header">
+      <h1 id="form-title">Add New Student</h1>
+      <p id="form-subtitle">Fill in the details below to register a new student</p>
+    </div>
+
+    <div class="card" style="max-width:680px;">
+      <form id="student-form" novalidate>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="name">Full Name *</label>
+            <input type="text" id="name" class="form-control" placeholder="e.g. Aarav Sharma" required/>
+          </div>
+          <div class="form-group">
+            <label for="email">Email Address *</label>
+            <input type="email" id="email" class="form-control" placeholder="e.g. aarav@example.com" required/>
+          </div>
+          <div class="form-group">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" class="form-control" placeholder="e.g. 9876543210"
+                   pattern="\d{10}" maxlength="10" inputmode="numeric"/>
+            <div class="field-hint">Must be exactly 10 digits, numbers only.</div>
+          </div>
+          <div class="form-group">
+            <label for="dob">Date of Birth</label>
+            <input type="date" id="dob" class="form-control"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="address">Address</label>
+          <textarea id="address" class="form-control" rows="3" placeholder="Street, City, State"></textarea>
+        </div>
+
+        <p id="form-error" class="form-error-banner hidden"></p>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="submit-btn">＋ Add Student</button>
+          <a href="students.html" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="js/api.js"></script>
+<script>
+// Check if we're in edit mode
+const params    = new URLSearchParams(window.location.search);
+const editId    = params.get("edit");
+let   editMode  = !!editId;
+
+if (editMode) {
+  document.getElementById("form-title").textContent    = "Edit Student";
+  document.getElementById("form-subtitle").textContent = "Update the student's information below";
+  document.getElementById("submit-btn").textContent    = "💾 Save Changes";
+
+  // Pre-fill form
+  (async () => {
+    const res = await StudentsAPI.getById(editId);
+    if (!res.success) { showToast(res.error, "error"); return; }
+    const s = res.student;
+    document.getElementById("name").value    = s.name    || "";
+    document.getElementById("email").value   = s.email   || "";
+    document.getElementById("phone").value   = s.phone   || "";
+    document.getElementById("dob").value     = s.dob     || "";
+    document.getElementById("address").value = s.address || "";
+  })();
+}
+
+document.getElementById("student-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const errEl = document.getElementById("form-error");
+  errEl.classList.add("hidden");
+
+  const data = {
+    name:    document.getElementById("name").value.trim(),
+    email:   document.getElementById("email").value.trim(),
+    phone:   document.getElementById("phone").value.trim(),
+    dob:     document.getElementById("dob").value,
+    address: document.getElementById("address").value.trim(),
+  };
+
+  // Client-side validation
+  if (!data.name)  { errEl.textContent = "Name is required.";  errEl.classList.remove("hidden"); return; }
+  if (!data.email) { errEl.textContent = "Email is required."; errEl.classList.remove("hidden"); return; }
+  if (data.phone && !/^\d{10}$/.test(data.phone)) {
+    errEl.textContent = "Phone number must be exactly 10 digits (numbers only)."; errEl.classList.remove("hidden"); return;
+  }
+
+  const btn = document.getElementById("submit-btn");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+
+  const res = editMode
+    ? await StudentsAPI.update(editId, data)
+    : await StudentsAPI.create(data);
+
+  btn.disabled = false;
+  btn.textContent = editMode ? "💾 Save Changes" : "＋ Add Student";
+
+  if (res.success) {
+    showToast(editMode ? "Student updated!" : "Student added successfully!");
+    setTimeout(() => { window.location.href = `student_detail.html?id=${res.student.id}`; }, 1000);
+  } else {
+    errEl.textContent = res.error;
+    errEl.classList.remove("hidden");
+  }
+});
+</script>
+</body>
+</html>

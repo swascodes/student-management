@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="View, search, and manage all students in the Student Manager system."/>
+  <title>Students | Student Manager</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🎓</div>
+      <h2>Student Manager</h2>
+      <span>Academic Platform</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <a href="index.html"       class="nav-link"><span class="nav-icon">⊞</span> Dashboard</a>
+      <div class="nav-section-label">Manage</div>
+      <a href="students.html"    class="nav-link active"><span class="nav-icon">👨‍🎓</span> Students</a>
+      <a href="courses.html"     class="nav-link"><span class="nav-icon">📚</span> Courses</a>
+      <a href="enroll.html"      class="nav-link"><span class="nav-icon">🔗</span> Enrollments</a>
+      <div class="nav-section-label">Actions</div>
+      <a href="add_student.html" class="nav-link"><span class="nav-icon">＋</span> Add Student</a>
+      <a href="add_course.html"  class="nav-link"><span class="nav-icon">＋</span> Add Course</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header flex items-center justify-between">
+      <div>
+        <h1>Students</h1>
+        <p>Manage and view all registered students</p>
+      </div>
+      <a href="add_student.html" class="btn btn-primary">＋ Add Student</a>
+    </div>
+
+    <!-- Search -->
+    <div class="search-bar">
+      <input id="search-input" type="text" class="form-control" placeholder="🔍  Search by name or ID…"/>
+      <select id="course-filter" class="form-control" style="max-width:220px;">
+        <option value="">All Courses</option>
+      </select>
+      <button class="btn btn-secondary" onclick="clearSearch()">Clear</button>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>DOB</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="students-tbody">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay hidden" id="delete-modal">
+  <div class="modal">
+    <h3>⚠️ Confirm Deletion</h3>
+    <p style="color:var(--text-secondary);margin-bottom:24px;">
+      Are you sure you want to delete this student? All enrollments and marks will be permanently removed.
+    </p>
+    <div class="form-actions">
+      <button class="btn btn-danger" id="confirm-delete-btn">Delete</button>
+      <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="js/api.js"></script>
+<script>
+let allStudents = [];
+let deleteTargetId = null;
+
+async function loadStudents(search = "", courseId = "") {
+  const tbody = document.getElementById("students-tbody");
+  renderTableSkeleton(tbody, 6);
+
+  let res;
+  if (courseId) {
+    // Filter by course via enrollment endpoint
+    const eRes = await EnrollmentsAPI.getForCourse(parseInt(courseId));
+    const ids  = (eRes.students || []).map(s => s.id);
+    res = await StudentsAPI.getAll(search);
+    if (res.success) {
+      res.students = res.students.filter(s => ids.includes(s.id));
+    }
+  } else {
+    res = await StudentsAPI.getAll(search);
+  }
+
+  if (!res.success) { showToast(res.error, "error"); return; }
+
+  allStudents = res.students;
+  renderTable(allStudents);
+}
+
+function renderTable(students) {
+  const tbody = document.getElementById("students-tbody");
+  if (!students.length) {
+    tbody.innerHTML = `<tr><td colspan="6">
+      <div class="empty-state">
+        <div class="empty-icon">👨‍🎓</div>
+        <p>No students found. <a href="add_student.html" class="text-accent">Add one!</a></p>
+      </div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = students.map(s => `
+    <tr>
+      <td><span class="badge badge-purple">#${s.id}</span></td>
+      <td>${s.name}</td>
+      <td>${s.email}</td>
+      <td>${s.phone || "—"}</td>
+      <td>${s.dob ? s.dob : "—"}</td>
+      <td>
+        <div class="flex gap-2">
+          <a href="student_detail.html?id=${s.id}" class="btn btn-secondary btn-sm">View</a>
+          <a href="add_student.html?edit=${s.id}"  class="btn btn-secondary btn-sm">Edit</a>
+          <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${s.id})">Delete</button>
+        </div>
+      </td>
+    </tr>`).join("");
+}
+
+async function populateCourseFilter() {
+  const res = await CoursesAPI.getAll();
+  const sel = document.getElementById("course-filter");
+  (res.courses || []).forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c.id; opt.textContent = c.course_name;
+    sel.appendChild(opt);
+  });
+}
+
+function clearSearch() {
+  document.getElementById("search-input").value  = "";
+  document.getElementById("course-filter").value = "";
+  loadStudents();
+}
+
+let searchTimeout;
+document.getElementById("search-input").addEventListener("input", e => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => loadStudents(e.target.value, document.getElementById("course-filter").value), 300);
+});
+document.getElementById("course-filter").addEventListener("change", e => {
+  loadStudents(document.getElementById("search-input").value, e.target.value);
+});
+
+// Delete modal
+function openDeleteModal(id) { deleteTargetId = id; document.getElementById("delete-modal").classList.remove("hidden"); }
+function closeDeleteModal()  { deleteTargetId = null; document.getElementById("delete-modal").classList.add("hidden"); }
+
+document.getElementById("confirm-delete-btn").addEventListener("click", async () => {
+  if (!deleteTargetId) return;
+  const res = await StudentsAPI.delete(deleteTargetId);
+  closeDeleteModal();
+  if (res.success) { showToast("Student deleted successfully."); loadStudents(); }
+  else             { showToast(res.error, "error"); }
+});
+
+// Init
+populateCourseFilter();
+loadStudents();
+</script>
+</body>
+</html>

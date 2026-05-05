@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="View, add, edit, and delete courses in Student Manager."/>
+  <title>Courses | Student Manager</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🎓</div>
+      <h2>Student Manager</h2>
+      <span>Academic Platform</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <a href="index.html"       class="nav-link"><span class="nav-icon">⊞</span> Dashboard</a>
+      <div class="nav-section-label">Manage</div>
+      <a href="students.html"    class="nav-link"><span class="nav-icon">👨‍🎓</span> Students</a>
+      <a href="courses.html"     class="nav-link active"><span class="nav-icon">📚</span> Courses</a>
+      <a href="enroll.html"      class="nav-link"><span class="nav-icon">🔗</span> Enrollments</a>
+      <div class="nav-section-label">Actions</div>
+      <a href="add_student.html" class="nav-link"><span class="nav-icon">＋</span> Add Student</a>
+      <a href="add_course.html"  class="nav-link"><span class="nav-icon">＋</span> Add Course</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header flex items-center justify-between">
+      <div>
+        <h1>Courses</h1>
+        <p>Manage all academic courses</p>
+      </div>
+      <a href="add_course.html" class="btn btn-primary">＋ Add Course</a>
+    </div>
+
+    <div class="card">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Course Name</th><th>Credits</th><th>Instructor</th><th>Students</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="courses-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay hidden" id="delete-modal">
+  <div class="modal">
+    <h3>⚠️ Delete Course</h3>
+    <p style="color:var(--text-secondary);margin-bottom:24px;">
+      This will remove the course and all associated enrollments and marks permanently.
+    </p>
+    <div class="form-actions">
+      <button class="btn btn-danger" id="confirm-delete-btn">Delete Course</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="js/api.js"></script>
+<script>
+let deleteTargetId = null;
+
+async function loadCourses() {
+  const tbody = document.getElementById("courses-tbody");
+  renderTableSkeleton(tbody, 6);
+  const res = await CoursesAPI.getAll();
+  if (!res.success) { showToast(res.error, "error"); return; }
+  const courses = res.courses;
+
+  if (!courses.length) {
+    tbody.innerHTML = `<tr><td colspan="6">
+      <div class="empty-state"><div class="empty-icon">📚</div>
+      <p>No courses yet. <a href="add_course.html" class="text-accent">Add one!</a></p></div>
+    </td></tr>`;
+    return;
+  }
+
+  // Get enrollment counts per course
+  const rows = await Promise.all(courses.map(async c => {
+    const eRes = await EnrollmentsAPI.getForCourse(c.id);
+    const count = (eRes.students || []).length;
+    return { ...c, studentCount: count };
+  }));
+
+  tbody.innerHTML = rows.map(c => `
+    <tr>
+      <td><span class="badge badge-purple">#${c.id}</span></td>
+      <td>${c.course_name}</td>
+      <td><span class="badge badge-teal">${c.credits} cr</span></td>
+      <td>${c.instructor_name}</td>
+      <td><span class="badge badge-purple">${c.studentCount}</span></td>
+      <td>
+        <div class="flex gap-2">
+          <a href="add_course.html?edit=${c.id}" class="btn btn-secondary btn-sm">Edit</a>
+          <button class="btn btn-danger btn-sm" onclick="openModal(${c.id})">Delete</button>
+        </div>
+      </td>
+    </tr>`).join("");
+}
+
+function openModal(id) { deleteTargetId = id; document.getElementById("delete-modal").classList.remove("hidden"); }
+function closeModal()  { deleteTargetId = null; document.getElementById("delete-modal").classList.add("hidden"); }
+
+document.getElementById("confirm-delete-btn").addEventListener("click", async () => {
+  if (!deleteTargetId) return;
+  const res = await CoursesAPI.delete(deleteTargetId);
+  closeModal();
+  if (res.success) { showToast("Course deleted."); loadCourses(); }
+  else             { showToast(res.error, "error"); }
+});
+
+loadCourses();
+</script>
+</body>
+</html>

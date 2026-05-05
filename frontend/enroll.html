@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Enroll students in courses and manage enrollments."/>
+  <title>Enrollments | Student Manager</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🎓</div>
+      <h2>Student Manager</h2>
+      <span>Academic Platform</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <a href="index.html"       class="nav-link"><span class="nav-icon">⊞</span> Dashboard</a>
+      <div class="nav-section-label">Manage</div>
+      <a href="students.html"    class="nav-link"><span class="nav-icon">👨‍🎓</span> Students</a>
+      <a href="courses.html"     class="nav-link"><span class="nav-icon">📚</span> Courses</a>
+      <a href="enroll.html"      class="nav-link active"><span class="nav-icon">🔗</span> Enrollments</a>
+      <div class="nav-section-label">Actions</div>
+      <a href="add_student.html" class="nav-link"><span class="nav-icon">＋</span> Add Student</a>
+      <a href="add_course.html"  class="nav-link"><span class="nav-icon">＋</span> Add Course</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header">
+      <h1>Enrollments</h1>
+      <p>Assign students to courses</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;">
+      <!-- Enroll Form -->
+      <div class="card">
+        <h3 style="font-size:1rem;font-weight:800;color:var(--text-primary);margin-bottom:20px;">🔗 Assign Course to Student</h3>
+        <div class="form-group">
+          <label for="student-sel">Select Student *</label>
+          <select id="student-sel" class="form-control">
+            <option value="">Loading students…</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="course-sel">Select Course *</label>
+          <select id="course-sel" class="form-control">
+            <option value="">Loading courses…</option>
+          </select>
+        </div>
+        <p id="enroll-error" class="form-error-banner hidden"></p>
+        <button class="btn btn-primary w-full" id="enroll-btn" onclick="enrollStudent()">🔗 Enroll Student</button>
+      </div>
+
+      <!-- Enrollment Preview -->
+      <div class="card">
+        <h3 style="font-size:1rem;font-weight:800;color:var(--text-primary);margin-bottom:16px;">👁 Student's Current Courses</h3>
+        <p style="font-size:0.82rem;color:var(--text-muted);font-weight:500;margin-bottom:14px;">Select a student to preview their enrollments.</p>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Course</th><th>Credits</th><th>Enrolled</th></tr></thead>
+            <tbody id="preview-tbody">
+              <tr><td colspan="3" class="text-muted text-sm" style="padding:16px;">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- All Enrollments -->
+    <div class="card" style="margin-top:28px;">
+      <h3 style="font-size:1rem;font-weight:800;color:var(--text-primary);margin-bottom:16px;">📋 All Enrollments</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Student</th><th>Course</th><th>Credits</th><th>Instructor</th><th>Date</th><th></th></tr>
+          </thead>
+          <tbody id="all-enrollments-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="js/api.js"></script>
+<script>
+let allStudents = [], allCourses = [];
+
+async function init() {
+  const [sRes, cRes] = await Promise.all([StudentsAPI.getAll(), CoursesAPI.getAll()]);
+  allStudents = sRes.students || [];
+  allCourses  = cRes.courses  || [];
+
+  const sSel = document.getElementById("student-sel");
+  const cSel = document.getElementById("course-sel");
+
+  sSel.innerHTML = '<option value="">Choose student…</option>' +
+    allStudents.map(s => `<option value="${s.id}">${s.name} (#${s.id})</option>`).join("");
+  cSel.innerHTML = '<option value="">Choose course…</option>' +
+    allCourses.map(c => `<option value="${c.id}">${c.course_name}</option>`).join("");
+
+  // Pre-select student from URL param
+  const params = new URLSearchParams(window.location.search);
+  const preId  = params.get("student");
+  if (preId) { sSel.value = preId; loadPreview(preId); }
+
+  loadAllEnrollments();
+}
+
+document.getElementById("student-sel").addEventListener("change", e => {
+  if (e.target.value) loadPreview(e.target.value);
+  else document.getElementById("preview-tbody").innerHTML = `<tr><td colspan="3" class="text-muted">—</td></tr>`;
+});
+
+async function loadPreview(studentId) {
+  const res   = await EnrollmentsAPI.getForStudent(studentId);
+  const tbody = document.getElementById("preview-tbody");
+  const courses = res.courses || [];
+  if (!courses.length) {
+    tbody.innerHTML = `<tr><td colspan="3" class="text-muted" style="padding:16px;">No enrollments yet.</td></tr>`;
+  } else {
+    tbody.innerHTML = courses.map(c => `
+      <tr>
+        <td>${c.course_name}</td>
+        <td><span class="badge badge-teal">${c.credits} cr</span></td>
+        <td>${c.enrolled_at ? c.enrolled_at.split("T")[0] : "—"}</td>
+      </tr>`).join("");
+  }
+}
+
+async function enrollStudent() {
+  const sid = document.getElementById("student-sel").value;
+  const cid = document.getElementById("course-sel").value;
+  const errEl = document.getElementById("enroll-error");
+  errEl.classList.add("hidden");
+
+  if (!sid || !cid) {
+    errEl.textContent = "Please select both a student and a course.";
+    errEl.classList.remove("hidden");
+    return;
+  }
+
+  const btn = document.getElementById("enroll-btn");
+  btn.disabled = true; btn.textContent = "Enrolling…";
+
+  const res = await EnrollmentsAPI.enroll(parseInt(sid), parseInt(cid));
+
+  btn.disabled = false; btn.textContent = "🔗 Enroll Student";
+
+  if (res.success) {
+    showToast("Enrolled successfully!");
+    loadPreview(sid);
+    loadAllEnrollments();
+  } else {
+    errEl.textContent = res.error;
+    errEl.classList.remove("hidden");
+  }
+}
+
+async function loadAllEnrollments() {
+  const tbody = document.getElementById("all-enrollments-tbody");
+  renderTableSkeleton(tbody, 6);
+
+  // Fetch per student
+  const rows = [];
+  await Promise.all(allStudents.map(async s => {
+    const res = await EnrollmentsAPI.getForStudent(s.id);
+    (res.courses || []).forEach(c => rows.push({ student: s, course: c }));
+  }));
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🔗</div><p>No enrollments yet.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td><a href="student_detail.html?id=${r.student.id}" style="color:var(--accent-light);text-decoration:none;">${r.student.name}</a></td>
+      <td>${r.course.course_name}</td>
+      <td><span class="badge badge-teal">${r.course.credits} cr</span></td>
+      <td>${r.course.instructor_name}</td>
+      <td>${r.course.enrolled_at ? r.course.enrolled_at.split("T")[0] : "—"}</td>
+      <td>
+        <button class="btn btn-danger btn-sm"
+          onclick="removeEnrollment(${r.student.id},${r.course.id},'${r.student.name}','${r.course.course_name}')">
+          Remove
+        </button>
+      </td>
+    </tr>`).join("");
+}
+
+async function removeEnrollment(sid, cid, sName, cName) {
+  if (!confirm(`Remove ${sName} from "${cName}"?`)) return;
+  const res = await EnrollmentsAPI.remove(sid, cid);
+  if (res.success) { showToast("Enrollment removed."); loadAllEnrollments(); }
+  else             { showToast(res.error, "error"); }
+}
+
+init();
+</script>
+</body>
+</html>
