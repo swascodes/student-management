@@ -54,8 +54,7 @@
       <p class="page-subtitle" style="max-width: 600px; line-height: 1.5; margin-top: 8px;">Enroll a new academic record into the system. Ensure all mandatory institutional identifiers marked with <span style="color:var(--danger)">*</span> are provided.</p>
     </div>
 
-    <div class="page-two-col">
-       <div style="min-width: 0;">
+    <div style="max-width: 800px; margin: 0 auto; min-width: 0;">
           <form id="add-form" novalidate>
              <!-- Personal Information -->
              <div class="card fade-up mb-6" style="margin-bottom:28px;">
@@ -111,13 +110,7 @@
                       </div>
                     </div>
                     
-                    <div class="form-group full">
-                      <label class="form-label" for="photo">Profile Photo</label>
-                      <div class="input-wrapper">
-                        <i class="input-icon fa-solid fa-camera"></i>
-                        <input type="file" class="form-control" id="photo" accept="image/*" style="padding-left:38px;" />
-                      </div>
-                    </div>
+                    <!-- Photo removed -->
 
                     <div class="form-group">
                       <label class="form-label" for="guardianName">Guardian Name</label>
@@ -205,33 +198,6 @@
              </div>
           </form>
        </div>
-       
-       <!-- Right Widgets (Registration Guidelines logic adopted but themed natively) -->
-       <div style="display:flex; flex-direction:column; gap:24px;">
-          <div class="card fade-up" style="background:var(--primary-light); border:1px solid var(--primary); padding:28px;">
-             <div style="width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg, var(--primary), var(--secondary)); color:#fff; display:flex; align-items:center; justify-content:center; margin-bottom:20px; font-size:18px;">
-                <i class="fa-solid fa-info"></i>
-             </div>
-             <h3 style="color:var(--primary); font-size:18px; font-weight:800; margin:0 0 12px 0;">Registration Guidelines</h3>
-             <p style="color:var(--text-primary); font-size:14px; font-weight:500; line-height:1.6; margin:0;">Ensure the Student ID exactly matches the physical ID card provided securely by the registrar's office to prevent data duplication.</p>
-          </div>
-          
-          <div class="card fade-up">
-             <div class="card-header" style="border-bottom:1px solid var(--border);">
-                <div class="card-title" style="font-size:13px; font-weight:800; letter-spacing:1px; color:var(--text-secondary); text-transform:uppercase;">Recent Additions</div>
-             </div>
-             <div class="card-body">
-                <div style="display:flex; gap:16px; align-items:center;">
-                   <div style="width:42px; height:42px; border-radius:50%; background:var(--bg); display:flex; align-items:center; justify-content:center; color:var(--text-secondary); font-size: 18px;"><i class="fa-solid fa-clock-rotate-left"></i></div>
-                   <div>
-                      <div id="recent-title" style="font-weight:700; color:var(--text-primary); font-size:15px; margin-bottom:4px;">No records added recently</div>
-                      <div id="recent-desc" style="font-size:13px; color:var(--text-muted);">The list is currently empty.</div>
-                   </div>
-                </div>
-             </div>
-          </div>
-       </div>
-
     </div>
   </main>
 </div>
@@ -278,15 +244,7 @@ function pageInit() {
     el.className   = gradeClass(g);
   });
 
-  document.getElementById('photo').addEventListener('change', (e) => {
-    if (e.target.files.length > 0) {
-      const reader = new FileReader();
-      reader.onload = () => { _currentPhotoBase64 = reader.result; };
-      reader.readAsDataURL(e.target.files[0]);
-    } else {
-      _currentPhotoBase64 = null;
-    }
-  });
+  // Photo logic removed
 
   Object.keys(rules).forEach(field => {
     const el = document.getElementById(field);
@@ -334,7 +292,6 @@ async function handleSubmit(e) {
     bloodGroup: document.getElementById('bloodGroup').value,
     guardianName: document.getElementById('guardianName').value,
     guardianContact: document.getElementById('guardianContact').value,
-    photo:      _currentPhotoBase64,
     address:    document.getElementById('address').value,
     department: document.getElementById('department').value,
     joinDate:   document.getElementById('joinDate').value,
@@ -358,18 +315,8 @@ async function handleSubmit(e) {
     btn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
 
     setTimeout(() => {
-      document.getElementById('add-form').reset();
-      document.getElementById('joinDate').value = new Date().toISOString().split('T')[0];
-      document.getElementById('marks-progress').style.width = '0%';
-      document.getElementById('marks-grade-preview').textContent = '';
-      _currentPhotoBase64 = null;
-      Object.keys(rules).forEach(f => {
-        const el = document.getElementById(f); if (el) el.classList.remove('error','success');
-        const er = document.getElementById('err-' + f); if (er) er.classList.remove('show');
-      });
-      setButtonLoading(btn, false, '<i class="fa-solid fa-user-plus"></i> Add Student');
-      btn.style.background = '';
-    }, 1800);
+      window.location.href = 'manage.html';
+    }, 1500);
 
   } catch (err) {
     console.error('[Add Student]', err);
