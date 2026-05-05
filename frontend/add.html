@@ -305,10 +305,6 @@ async function handleSubmit(e) {
     const res     = await ApiService.createStudent(payload);
     const student = res.data ?? res;
     
-    // Update the recent widget natively
-    document.getElementById('recent-title').textContent = student.name;
-    document.getElementById('recent-desc').innerHTML = `Student ID: ${student.rollNo}`;
-    
     showToast('success', 'Student Added!', `${student.name} (${student.rollNo}) registered successfully.`);
 
     btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Saved!';
