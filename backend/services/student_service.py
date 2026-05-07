@@ -35,6 +35,20 @@ def _assign_grade(marks) -> str:
 # Row → dict normaliser
 # ────────────────────────────────────────────────────────────────────
 
+def _fmt_date(val) -> str:
+    """Return val as 'YYYY-MM-DD' string, or empty string if None/invalid."""
+    if not val:
+        return ""
+    # If it's already a str like 'YYYY-MM-DD' or a datetime string
+    s = str(val)
+    # Trim to just the date portion if datetime
+    if "T" in s:
+        return s.split("T")[0]
+    if " " in s and len(s) > 10:
+        return s.split(" ")[0]
+    return s[:10] if len(s) >= 10 else s
+
+
 def _row_to_student(row) -> dict:
     """Convert a sqlite3.Row to the student dict the frontend expects."""
     if not row:
@@ -46,7 +60,7 @@ def _row_to_student(row) -> dict:
         "name":             d["name"],
         "email":            d["email"],
         "phone":            d.get("phone") or "",
-        "dob":              d.get("dob") or "",
+        "dob":              _fmt_date(d.get("dob")),
         "address":          d.get("address") or "",
         "rollNo":           d.get("roll_no") or "",
         "department":       d.get("department") or "",
@@ -55,9 +69,9 @@ def _row_to_student(row) -> dict:
         "bloodGroup":       d.get("blood_group") or "",
         "guardianName":     d.get("guardian_name") or "",
         "guardianContact":  d.get("guardian_contact") or "",
-        "joinDate":         d.get("join_date") or "",
-        "createdAt":        d.get("created_at") or "",
-        "updatedAt":        d.get("updated_at") or "",
+        "joinDate":         _fmt_date(d.get("join_date")),
+        "createdAt":        _fmt_date(d.get("created_at")),
+        "updatedAt":        _fmt_date(d.get("updated_at")),
     }
 
 

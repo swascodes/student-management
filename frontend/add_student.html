@@ -85,11 +85,11 @@ if (editMode) {
   document.getElementById("form-subtitle").textContent = "Update the student's information below";
   document.getElementById("submit-btn").textContent    = "💾 Save Changes";
 
-  // Pre-fill form
+  // Pre-fill form — backend returns { success, data: {student object} }
   (async () => {
     const res = await StudentsAPI.getById(editId);
-    if (!res.success) { showToast(res.error, "error"); return; }
-    const s = res.student;
+    if (!res.success) { showToast(res.error || 'Student not found.', "error"); return; }
+    const s = res.data;   // ← backend returns { success, data: {...} }, NOT { student: {...} }
     document.getElementById("name").value    = s.name    || "";
     document.getElementById("email").value   = s.email   || "";
     document.getElementById("phone").value   = s.phone   || "";
@@ -131,7 +131,9 @@ document.getElementById("student-form").addEventListener("submit", async e => {
 
   if (res.success) {
     showToast(editMode ? "Student updated!" : "Student added successfully!");
-    setTimeout(() => { window.location.href = `student_detail.html?id=${res.student.id}`; }, 1000);
+    // Backend returns { success, data: {student} } for both create and update
+    const savedId = (res.data && res.data.id) ? res.data.id : (res.student && res.student.id);
+    setTimeout(() => { window.location.href = `student_detail.html?id=${savedId}`; }, 1000);
   } else {
     errEl.textContent = res.error;
     errEl.classList.remove("hidden");

@@ -1,70 +1,154 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EduManage — Professional Student Management</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="auth-landing.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Student Manager – Dashboard overview of students, courses, and enrollments."/>
+  <title>Dashboard | Student Manager</title>
+  <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
-
-  <header class="landing-header">
-    <div class="sidebar-logo" style="padding:0; border:none; color:var(--text-primary)">
-      <div class="logo-icon"><i class="fa-solid fa-graduation-cap"></i></div>
-      <div class="logo-text" style="color:var(--text-primary)">EduManage</div>
+<div class="layout">
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🎓</div>
+      <h2>Student Manager</h2>
+      <span>Academic Platform</span>
     </div>
-    <nav class="landing-nav">
-      <div style="display:flex; gap: 8px;">
-        <a href="login.html" class="btn btn-primary">Log In</a>
-      </div>
-      <button class="btn btn-icon dark-toggle" id="dark-toggle"><i class="fa-solid fa-moon"></i></button>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <a href="index.html"       class="nav-link active"><span class="nav-icon">⊞</span> Dashboard</a>
+
+      <div class="nav-section-label">Manage</div>
+      <a href="students.html"    class="nav-link"><span class="nav-icon">👨‍🎓</span> Students</a>
+      <a href="courses.html"     class="nav-link"><span class="nav-icon">📚</span> Courses</a>
+      <a href="enroll.html"      class="nav-link"><span class="nav-icon">🔗</span> Enrollments</a>
+
+      <div class="nav-section-label">Actions</div>
+      <a href="add_student.html" class="nav-link"><span class="nav-icon">＋</span> Add Student</a>
+      <a href="add_course.html"  class="nav-link"><span class="nav-icon">＋</span> Add Course</a>
     </nav>
-  </header>
+  </aside>
 
-  <main>
-    <section class="landing-hero">
-      <h1 class="hero-title">Redefining Student<br/>Management</h1>
-      <p class="hero-subtitle">The ultimate platform for modern institutions. Track progress, manage departments, and empower students with a beautifully minimal dashboard.</p>
-      <div class="hero-buttons">
-        <a href="signup.html" class="btn btn-primary btn-lg">Get Started Free</a>
-        <a href="#features" class="btn btn-outline btn-lg">Explore Features</a>
-      </div>
-    </section>
-
-    <section id="features" class="features-section">
-      <div class="feature-card">
-        <i class="fa-solid fa-chart-line feature-icon"></i>
-        <h3 style="font-size: 20px; font-weight:700; margin-bottom:12px">Advanced Analytics</h3>
-        <p style="color: var(--text-secondary)">Real-time performance metrics, department breakdown, and instant grade calculations.</p>
-      </div>
-      <div class="feature-card">
-        <i class="fa-solid fa-shield-halved feature-icon"></i>
-        <h3 style="font-size: 20px; font-weight:700; margin-bottom:12px">Secure Access</h3>
-        <p style="color: var(--text-secondary)">Role-based access separating student portals from administrative features ensuring complete data privacy.</p>
-      </div>
-      <div class="feature-card">
-        <i class="fa-solid fa-bolt feature-icon"></i>
-        <h3 style="font-size: 20px; font-weight:700; margin-bottom:12px">Lightning Fast</h3>
-        <p style="color: var(--text-secondary)">Built with the latest technologies providing seamless, instant transitions across all modules and devices.</p>
-      </div>
-    </section>
-  </main>
-
-  <footer class="landing-footer">
-    <div style="margin-bottom: 16px; font-size:24px; color:var(--text-primary)"><i class="fa-solid fa-graduation-cap"></i></div>
-    <p>&copy; <span id="year"></span> EduManage Systems. All rights reserved.</p>
-    <div style="margin-top: 16px; display:flex; gap: 16px; justify-content:center;">
-      <a href="#" style="color:var(--text-muted);"><i class="fa-brands fa-twitter"></i></a>
-      <a href="#" style="color:var(--text-muted);"><i class="fa-brands fa-github"></i></a>
-      <a href="#" style="color:var(--text-muted);"><i class="fa-brands fa-linkedin"></i></a>
+  <!-- ── Main ── -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1>Dashboard</h1>
+      <p>Academic overview at a glance</p>
     </div>
-  </footer>
 
-  <script src="script.js"></script>
-  <script>
-    document.getElementById('year').textContent = new Date().getFullYear();
-  </script>
+    <!-- Stats -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon purple">👨‍🎓</div>
+        <div class="stat-value" id="stat-students"><div class="skeleton" style="width:60px;height:32px;"></div></div>
+        <div class="stat-label">Total Students</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon teal">📚</div>
+        <div class="stat-value" id="stat-courses"><div class="skeleton" style="width:60px;height:32px;"></div></div>
+        <div class="stat-label">Total Courses</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon yellow">🔗</div>
+        <div class="stat-value" id="stat-enrollments"><div class="skeleton" style="width:60px;height:32px;"></div></div>
+        <div class="stat-label">Enrollments</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red">📝</div>
+        <div class="stat-value" id="stat-marks"><div class="skeleton" style="width:60px;height:32px;"></div></div>
+        <div class="stat-label">Marks Recorded</div>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="card mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 style="font-size:1.05rem;font-weight:800;color:var(--text-primary);">Quick Actions</h2>
+      </div>
+      <div class="flex gap-3" style="flex-wrap:wrap;">
+        <a href="add_student.html" class="btn btn-primary">＋ New Student</a>
+        <a href="add_course.html"  class="btn btn-secondary">＋ New Course</a>
+        <a href="enroll.html"      class="btn btn-secondary">🔗 Enroll Student</a>
+        <a href="students.html"    class="btn btn-secondary">👁 View All Students</a>
+      </div>
+    </div>
+
+    <!-- Recent Students -->
+    <div class="card">
+      <div class="flex items-center justify-between mb-4">
+        <h2 style="font-size:1.05rem;font-weight:700;">Recent Students</h2>
+        <a href="students.html" class="btn btn-secondary btn-sm">View All</a>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="recent-students-tbody">
+            <tr><td colspan="5"><div class="skeleton"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="js/api.js"></script>
+<script>
+(async () => {
+  const [studRes, courseRes] = await Promise.all([
+    StudentsAPI.getAll(),
+    CoursesAPI.getAll(),
+  ]);
+
+  // Backend returns { success, data:[...], total } for students list
+  // and { success, courses:[...] } for courses list
+  const students = (studRes.data && Array.isArray(studRes.data)) ? studRes.data : [];
+  const courses  = courseRes.courses || [];
+
+  document.getElementById("stat-students").textContent    = students.length;
+  document.getElementById("stat-courses").textContent     = courses.length;
+
+  // Fetch enrollment count from API
+  let enrollCount = 0, markCount = 0;
+  await Promise.all(students.map(async s => {
+    const [eRes, mRes] = await Promise.all([
+      EnrollmentsAPI.getForStudent(s.id),
+      MarksAPI.getForStudent(s.id),
+    ]);
+    enrollCount += (eRes.courses || []).length;
+    markCount   += (mRes.marks   || []).length;
+  }));
+
+  document.getElementById("stat-enrollments").textContent = enrollCount;
+  document.getElementById("stat-marks").textContent       = markCount;
+
+  // Recent students table (last 5)
+  const tbody = document.getElementById("recent-students-tbody");
+  const recent = students.slice(0, 5);
+  if (!recent.length) {
+    tbody.innerHTML = `<tr><td colspan="5">
+      <div class="empty-state"><div class="empty-icon">👨‍🎓</div><p>No students found. <a href="add_student.html" style="color:var(--color-accent);">Add one!</a></p></div>
+    </td></tr>`;
+  } else {
+    tbody.innerHTML = recent.map(s => `
+      <tr>
+        <td><span class="badge badge-purple">#${s.id}</span></td>
+        <td>${s.name}</td>
+        <td>${s.email}</td>
+        <td>${s.phone || "—"}</td>
+        <td>
+          <a href="student_detail.html?id=${s.id}" class="btn btn-secondary btn-sm">View</a>
+        </td>
+      </tr>`).join("");
+  }
+})();
+</script>
 </body>
 </html>

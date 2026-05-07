@@ -90,17 +90,31 @@
 let allStudents = [], allCourses = [];
 
 async function init() {
+  // Backend returns: students -> { success, data: [...] }
+  //                  courses  -> { success, courses: [...] }
   const [sRes, cRes] = await Promise.all([StudentsAPI.getAll(), CoursesAPI.getAll()]);
-  allStudents = sRes.students || [];
-  allCourses  = cRes.courses  || [];
+
+  // Students API returns { success, data: [...], total } — read .data
+  allStudents = (sRes.data && Array.isArray(sRes.data)) ? sRes.data : (sRes.students || []);
+  // Courses API returns { success, courses: [...] } — read .courses
+  allCourses  = cRes.courses || [];
 
   const sSel = document.getElementById("student-sel");
   const cSel = document.getElementById("course-sel");
 
-  sSel.innerHTML = '<option value="">Choose student…</option>' +
-    allStudents.map(s => `<option value="${s.id}">${s.name} (#${s.id})</option>`).join("");
-  cSel.innerHTML = '<option value="">Choose course…</option>' +
-    allCourses.map(c => `<option value="${c.id}">${c.course_name}</option>`).join("");
+  if (!allStudents.length) {
+    sSel.innerHTML = '<option value="">No students found — add one first</option>';
+  } else {
+    sSel.innerHTML = '<option value="">Choose student…</option>' +
+      allStudents.map(s => `<option value="${s.id}">${s.name} (${s.rollNo || '#'+s.id})</option>`).join("");
+  }
+
+  if (!allCourses.length) {
+    cSel.innerHTML = '<option value="">No courses found — add one first</option>';
+  } else {
+    cSel.innerHTML = '<option value="">Choose course…</option>' +
+      allCourses.map(c => `<option value="${c.id}">${c.course_name}</option>`).join("");
+  }
 
   // Pre-select student from URL param
   const params = new URLSearchParams(window.location.search);
@@ -116,8 +130,10 @@ document.getElementById("student-sel").addEventListener("change", e => {
 });
 
 async function loadPreview(studentId) {
-  const res   = await EnrollmentsAPI.getForStudent(studentId);
   const tbody = document.getElementById("preview-tbody");
+  tbody.innerHTML = `<tr><td colspan="3" style="padding:12px;text-align:center;"><span class="skeleton" style="display:inline-block;width:80px;height:14px;"></span></td></tr>`;
+  // EnrollmentsAPI.getForStudent returns { success, courses: [...] }
+  const res = await EnrollmentsAPI.getForStudent(studentId);
   const courses = res.courses || [];
   if (!courses.length) {
     tbody.innerHTML = `<tr><td colspan="3" class="text-muted" style="padding:16px;">No enrollments yet.</td></tr>`;
@@ -155,7 +171,7 @@ async function enrollStudent() {
     loadPreview(sid);
     loadAllEnrollments();
   } else {
-    errEl.textContent = res.error;
+    errEl.textContent = res.error || "Failed to enroll.";
     errEl.classList.remove("hidden");
   }
 }
@@ -163,6 +179,11 @@ async function enrollStudent() {
 async function loadAllEnrollments() {
   const tbody = document.getElementById("all-enrollments-tbody");
   renderTableSkeleton(tbody, 6);
+
+  if (!allStudents.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🔗</div><p>No students found.</p></div></td></tr>`;
+    return;
+  }
 
   // Fetch per student
   const rows = [];
@@ -196,7 +217,7 @@ async function removeEnrollment(sid, cid, sName, cName) {
   if (!confirm(`Remove ${sName} from "${cName}"?`)) return;
   const res = await EnrollmentsAPI.remove(sid, cid);
   if (res.success) { showToast("Enrollment removed."); loadAllEnrollments(); }
-  else             { showToast(res.error, "error"); }
+  else             { showToast(res.error || "Failed.", "error"); }
 }
 
 init();

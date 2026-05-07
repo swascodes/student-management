@@ -82,7 +82,7 @@
             <thead>
               <tr><th>Course</th><th>Credits</th><th>Instructor</th><th></th></tr>
             </thead>
-            <tbody id="courses-tbody"></tbody>
+            <tbody id="courses-tbody"><tr><td colspan="4"><div class="skeleton" style="height:40px;"></div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -96,7 +96,7 @@
             <thead>
               <tr><th>Course</th><th>Marks</th><th>Grade</th><th></th></tr>
             </thead>
-            <tbody id="marks-tbody"></tbody>
+            <tbody id="marks-tbody"><tr><td colspan="4"><div class="skeleton" style="height:40px;"></div></td></tr></tbody>
           </table>
         </div>
 
@@ -104,7 +104,9 @@
         <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--glass-border);">
           <h4 style="font-size:0.85rem;font-weight:600;margin-bottom:12px;color:var(--text-secondary);">ADD / UPDATE MARKS</h4>
           <div class="flex gap-2" style="flex-wrap:wrap;">
-            <select id="marks-course-sel" class="form-control" style="flex:1;min-width:140px;"></select>
+            <select id="marks-course-sel" class="form-control" style="flex:1;min-width:140px;">
+              <option value="">Loading courses…</option>
+            </select>
             <input  id="marks-value" type="number" min="0" max="100" class="form-control" placeholder="0–100" style="width:100px;"/>
             <button class="btn btn-success" onclick="submitMarks()">Save</button>
           </div>
@@ -123,16 +125,25 @@ const studentId = parseInt(params.get("id"));
 if (!studentId) { window.location.href = "students.html"; }
 
 async function loadProfile() {
+  // Run all three fetches in parallel
   const [stuRes, courseRes, marksRes] = await Promise.all([
-    StudentsAPI.getById(studentId),
-    EnrollmentsAPI.getForStudent(studentId),
-    MarksAPI.getForStudent(studentId),
+    StudentsAPI.getById(studentId),      // returns { success, data: {student} }
+    EnrollmentsAPI.getForStudent(studentId), // returns { success, courses: [...] }
+    MarksAPI.getForStudent(studentId),    // returns { success, marks:[...], total, average, grade }
   ]);
 
-  if (!stuRes.success) { showToast(stuRes.error, "error"); return; }
-  const s       = stuRes.student;
+  // --- Student data ---
+  // Backend returns { success: true, data: { id, name, email, ... } }
+  // stuRes.data is the student object; stuRes.student does NOT exist
+  if (!stuRes.success) { showToast(stuRes.error || "Student not found.", "error"); return; }
+  const s       = stuRes.data;              // ← FIXED: was stuRes.student
   const courses = courseRes.courses  || [];
   const marks   = marksRes.marks     || [];
+
+  if (!s || !s.name) {
+    showToast("Student data could not be loaded.", "error");
+    return;
+  }
 
   // Page title + actions
   document.getElementById("page-title").textContent = s.name;
@@ -151,6 +162,7 @@ async function loadProfile() {
         <div class="meta-item">📞 <span>${s.phone || "—"}</span></div>
         <div class="meta-item">🎂 <span>${s.dob || "—"}</span></div>
         <div class="meta-item">📍 <span>${s.address || "—"}</span></div>
+        <div class="meta-item">🏫 <span>${s.department || "—"}</span></div>
         <div class="meta-item">🆔 <span>#${s.id}</span></div>
       </div>
     </div>`;
@@ -170,7 +182,7 @@ async function loadProfile() {
   }
 
   // Marks table
-  const mTbody = document.getElementById("marks-tbody");
+  const mTbody    = document.getElementById("marks-tbody");
   const summaryDiv = document.getElementById("marks-summary");
 
   if (!marks.length) {
@@ -178,7 +190,6 @@ async function loadProfile() {
     summaryDiv.innerHTML = "";
   } else {
     mTbody.innerHTML = marks.map(m => {
-      const g = marksRes.grade;
       const singleGrade = assignGrade(m.marks);
       return `
         <tr>
@@ -204,18 +215,23 @@ async function loadProfile() {
       </div>`;
   }
 
-  // Populate marks course selector (only enrolled courses)
+  // Populate marks course selector — shows enrolled courses so marks can be added
   const sel = document.getElementById("marks-course-sel");
-  sel.innerHTML = '<option value="">Select Course…</option>' +
-    courses.map(c => `<option value="${c.id}">${c.course_name}</option>`).join("");
+  if (!courses.length) {
+    sel.innerHTML = '<option value="">Enroll student in a course first</option>';
+  } else {
+    sel.innerHTML = '<option value="">Select Course…</option>' +
+      courses.map(c => `<option value="${c.id}">${c.course_name}</option>`).join("");
+  }
 }
 
 function assignGrade(m) {
   if (m >= 90) return "A+";
   if (m >= 80) return "A";
-  if (m >= 70) return "B";
-  if (m >= 60) return "C";
-  if (m >= 50) return "D";
+  if (m >= 70) return "B+";
+  if (m >= 60) return "B";
+  if (m >= 50) return "C";
+  if (m >= 40) return "D";
   return "F";
 }
 
@@ -223,18 +239,27 @@ async function unenroll(courseId, courseName) {
   if (!confirm(`Remove enrollment from "${courseName}"?`)) return;
   const res = await EnrollmentsAPI.remove(studentId, courseId);
   if (res.success) { showToast("Enrollment removed."); loadProfile(); }
-  else             { showToast(res.error, "error"); }
+  else             { showToast(res.error || "Failed.", "error"); }
 }
 
 async function submitMarks() {
   const courseId = document.getElementById("marks-course-sel").value;
   const marks    = document.getElementById("marks-value").value;
+
   if (!courseId) { showToast("Please select a course.", "error"); return; }
-  if (marks === "") { showToast("Please enter marks.", "error"); return; }
+  if (marks === "") { showToast("Please enter marks (0–100).", "error"); return; }
+  if (Number(marks) < 0 || Number(marks) > 100) {
+    showToast("Marks must be between 0 and 100.", "error"); return;
+  }
 
   const res = await MarksAPI.save(studentId, parseInt(courseId), parseFloat(marks));
-  if (res.success) { showToast("Marks saved!"); loadProfile(); document.getElementById("marks-value").value = ""; }
-  else             { showToast(res.error, "error"); }
+  if (res.success) {
+    showToast("Marks saved!");
+    document.getElementById("marks-value").value = "";
+    loadProfile();
+  } else {
+    showToast(res.error || "Failed to save marks.", "error");
+  }
 }
 
 loadProfile();
